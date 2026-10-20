@@ -18,6 +18,6 @@ echo "→ building $REV"
 docker build -q -f deploy/Dockerfile -t entaoganhei:latest -t "entaoganhei:$REV" . >/dev/null
 docker stack deploy -q --resolve-image never -c deploy/stack.yml entaoganhei
 docker service update -q --image "entaoganhei:$REV" entaoganhei_web >/dev/null
-docker image prune -f --filter "until=168h" --filter "reference=entaoganhei" >/dev/null || true
+docker image prune -f --filter "until=168h" >/dev/null 2>&1 || true
 REMOTE
 echo "✓ deployed $REV → https://podcast.example.com"
