@@ -5,6 +5,7 @@ version: "3.8"
 services:
   web:
     image: entaoganhei:latest
+    env_file: /opt/entaoganhei/.env  # RESEND_API_KEY, optional MAIL_FROM
     environment:
       DATABASE_URL: sqlite:////data/entao-ganhei.db
       BASE_URL: https://podcast.example.com

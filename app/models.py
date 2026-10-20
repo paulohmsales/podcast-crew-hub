@@ -21,8 +21,9 @@ class Member(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80), unique=True)
-    # Secret for the member's personal login link; regenerating it logs them out.
-    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    username: Mapped[str] = mapped_column(String(40), unique=True)  # stored lowercase
+    email: Mapped[str | None] = mapped_column(String(200), unique=True)  # stored lowercase
+    password_hash: Mapped[str | None] = mapped_column(String(200))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     phone: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -130,3 +131,25 @@ class Recording(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     theme: Mapped[Theme | None] = relationship()
+
+
+class LoginSession(Base):
+    __tablename__ = "sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)  # sha256 of the cookie
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+    member: Mapped[Member] = relationship()
+
+
+class PasswordReset(Base):
+    __tablename__ = "password_resets"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    member: Mapped[Member] = relationship()

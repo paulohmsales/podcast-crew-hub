@@ -9,11 +9,12 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Member, Poll, PollResponse, Recording, Theme, ThemeVote
-from app.routes import agenda, members, themes
-from app.web import COOKIE, COOKIE_SECURE, LoginRequired, current_member, render
+from app.routes import account, agenda, members, themes
+from app.web import LoginRequired, current_member, render
 
 app = FastAPI(title="Então Ganhei", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+app.include_router(account.router)
 app.include_router(themes.router)
 app.include_router(agenda.router)
 app.include_router(members.router)
@@ -27,30 +28,6 @@ async def _login_required(request: Request, _exc: LoginRequired):
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
-
-
-@app.get("/entrar")
-def login_page(request: Request):
-    return render(request, "login.html", None)
-
-
-@app.get("/entrar/{token}")
-def login(token: str, request: Request, db: Session = Depends(get_db)):
-    member = db.scalar(select(Member).where(Member.token == token))
-    if not member:
-        return render(request, "login.html", None, invalid=True)
-    resp = RedirectResponse("/", status_code=303)
-    resp.set_cookie(
-        COOKIE, token, max_age=400 * 24 * 3600, httponly=True, secure=COOKIE_SECURE, samesite="lax"
-    )
-    return resp
-
-
-@app.post("/sair")
-def logout():
-    resp = RedirectResponse("/entrar", status_code=303)
-    resp.delete_cookie(COOKIE)
-    return resp
 
 
 @app.get("/")

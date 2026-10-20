@@ -13,19 +13,6 @@ def test_requires_login():
     assert res.status_code == 303 and res.headers["location"] == "/entrar"
 
 
-def test_login_link_sets_cookie(paulo):
-    from fastapi.testclient import TestClient
-
-    from app.main import app
-
-    c = TestClient(app)
-    res = c.get(f"/entrar/{paulo.token}", follow_redirects=False)
-    assert res.status_code == 303
-    assert c.get("/").status_code == 200
-    assert "Paulo" in c.get("/").text
-    assert "não vale mais" in TestClient(app).get("/entrar/nope").text
-
-
 def test_theme_create_vote_comment_status(client, ana_client, db):
     res = client.post("/temas", data={"title": "Jogos de blefe", "description": "Coup, Skull", "links": "https://x.y\n"})
     theme_id = int(res.url.path.rsplit("/", 1)[1])
@@ -49,16 +36,9 @@ def test_theme_create_vote_comment_status(client, ana_client, db):
 def test_only_creator_or_admin_deletes_theme(client, ana_client, db):
     res = ana_client.post("/temas", data={"title": "Euros"})
     theme_id = int(res.url.path.rsplit("/", 1)[1])
-    other = Member(name="Bia", token="tok-Bia")
-    db.add(other)
-    db.commit()
-    from fastapi.testclient import TestClient
+    from tests.conftest import _client, _member
 
-    from app.main import app
-    from app.web import COOKIE
-
-    bia = TestClient(app)
-    bia.cookies.set(COOKIE, "tok-Bia")
+    bia = _client(_member(db, "Bia"))
     assert bia.post(f"/temas/{theme_id}/excluir").status_code == 403
     client.post(f"/temas/{theme_id}/excluir")  # admin
     db.expire_all()
@@ -126,15 +106,6 @@ def test_poll_until_midnight(client, db):
     poll = db.get(Poll, poll_id)
     assert poll.day_end == 24 * 60
     assert schedule.poll_times(poll) == [1320, 1350, 1380, 1410]
-
-
-def test_members_admin_only(client, ana_client, db):
-    assert ana_client.post("/membros", data={"name": "Caio"}).status_code == 403
-    client.post("/membros", data={"name": "Caio", "phone": "+55 11 99999-0000"})
-    caio = db.query(Member).filter_by(name="Caio").one()
-    page = client.get("/membros").text
-    assert f"/entrar/{caio.token}" in page
-    assert f"/entrar/{caio.token}" not in ana_client.get("/membros").text
 
 
 def test_best_windows_prefers_more_people_then_longer():

@@ -225,3 +225,8 @@ form.inline { display: inline; }
 .members > li:last-child { border-bottom: 0; }
 .member-head { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .login { max-width: 420px; margin: 4rem auto; text-align: center; }
+.login .left { text-align: left; margin-top: 1rem; }
+.btn.block { width: 100%; justify-content: center; }
+.callout.error { border-left-color: var(--danger); color: var(--danger); }
+.credentials { font-size: 1.05rem; line-height: 1.8; }
+.credentials code { background: var(--surface-2); padding: 0.1rem 0.4rem; border-radius: 6px; user-select: all; }

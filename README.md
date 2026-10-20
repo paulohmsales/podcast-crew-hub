@@ -10,16 +10,22 @@ FastAPI + Jinja, SQLite, sem build de frontend.
 
     uv sync
     uv run alembic upgrade head
-    uv run python -m app.cli add-member "Paulo" --admin   # imprime o link de login
+    uv run python -m app.cli add-member "Paulo" --username paulo --admin   # imprime a senha
     uv run uvicorn app.main:app --reload
 
 Testes: `uv run pytest`.
 
 ## Login
 
-Sem senha: cada pessoa tem um link pessoal (`/entrar/<token>`) que grava um
-cookie. Admins adicionam gente e mandam o link pelo WhatsApp na página **Grupo**;
-"novo link" invalida o anterior.
+Usuário (ou email) e senha. Na página **Grupo**, um admin adiciona a pessoa
+(nome, usuário, email); o app gera uma senha e manda usuário + senha por email
+via Resend. Se o email falhar, a senha aparece na tela uma vez para passar por
+outro canal. "Reenviar acesso" gera uma senha nova. Cada um troca a senha e o
+email em **Minha conta**, e "Esqueci minha senha" manda um link (2 h, uso único).
+
+Email: `RESEND_API_KEY` e `MAIL_FROM` em `/opt/entaoganhei/.env` no VPS. Sem um
+domínio verificado no Resend, o remetente padrão `onboarding@resend.dev` só
+entrega para o email dono da conta Resend.
 
 ## Produção (VPS)
 
@@ -31,7 +37,7 @@ do Traefik; banco SQLite no volume `entaoganhei_data`.
 Primeira vez, no VPS: `/opt/entaoganhei/src/deploy/install-backup.sh` (backup diário
 em `/opt/entaoganhei/backups`, 30 dias). Criar o primeiro admin:
 
-    ssh jobz-vps 'docker exec $(docker ps -q -f name=entaoganhei_web) python -m app.cli add-member "Paulo" --admin'
+    ssh jobz-vps 'docker exec $(docker ps -q -f name=entaoganhei_web) python -m app.cli reset-password paulo'
 
 ## Próximos passos
 
