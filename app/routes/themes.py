@@ -64,6 +64,16 @@ def _next_recordings(db: Session) -> dict[int, datetime]:
     return dict(rows)
 
 
+def _last_recordings(db: Session) -> dict[int, datetime]:
+    now = datetime.now()
+    rows = db.execute(
+        select(Recording.theme_id, func.max(Recording.starts_at))
+        .where(Recording.theme_id.is_not(None), Recording.starts_at < now)
+        .group_by(Recording.theme_id)
+    ).all()
+    return dict(rows)
+
+
 @router.get("")
 def episodes(
     request: Request,
@@ -112,18 +122,25 @@ def episodes(
     by_status: dict[str, list[Theme]] = {c: [] for c in columns}
     for theme in db.scalars(stmt.where(Theme.status.in_(columns))).all():
         by_status[theme.status].append(theme)
-    # Most voted first in every column; ties go to the next recording, then the newest.
-    def tiebreak(t: Theme) -> float:
-        if t.id in upcoming:
-            return -upcoming[t.id].timestamp()
-        when = t.published_on or t.created_at.date()
-        return datetime.combine(when, datetime.min.time()).timestamp()
+    recorded = _last_recordings(db)
+    far = datetime.max
 
-    for items in by_status.values():
-        items.sort(key=lambda t: (-votes.get(t.id, 0), -tiebreak(t)))
+    def newest_first(when: date | datetime | None, t: Theme) -> tuple:
+        return (-(when.toordinal() if when else 0), -(t.number or 0), -t.updated_at.timestamp())
+
+    # Votes rank the ideas, and the agenda keeps that order; after that, dates do.
+    for col, items in by_status.items():
+        if col in ("ideia", "pauta", "descartado"):
+            items.sort(key=lambda t: (-votes.get(t.id, 0), -t.created_at.timestamp()))
+        elif col == "agendado":
+            items.sort(key=lambda t: upcoming.get(t.id, far))
+        elif col == "gravado":
+            items.sort(key=lambda t: newest_first(recorded.get(t.id), t))
+        else:
+            items.sort(key=lambda t: newest_first(t.published_on, t))
     return render(
         request, "board.html", me,
-        columns=columns, by_status=by_status, upcoming=upcoming, descartados=descartados, **common,
+        columns=columns, by_status=by_status, upcoming=upcoming, recorded=recorded, descartados=descartados, **common,
     )
 
 

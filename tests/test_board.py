@@ -107,13 +107,32 @@ def test_first_visit_shows_tutorial_once(client, db):
     assert "Como funciona" in c.get("/membros").text
 
 
-def test_every_column_sorted_by_votes(client, ana_client, db):
+def test_votes_only_on_ideas_and_dates_say_what_they_are(client, ana_client, db):
+    from datetime import datetime, timedelta
+
+    from app.models import Recording
+
     a = _new(client, "Pouco votado")
     b = _new(client, "Muito votado")
-    for t in (a, b):
-        client.post(f"/episodios/{t}/status", data={"status": "publicado"})
     client.post(f"/episodios/{a}/voto")  # remove Paulo's automatic vote
     ana_client.post(f"/episodios/{b}/voto")  # b: Paulo + Ana
     page = client.get("/episodios").text
     assert page.index("Muito votado") < page.index("Pouco votado")
+    assert page.count('class="vote-chip') == 2
+
+    pub = _new(client, "No ar")
+    client.post(f"/episodios/{pub}/editar", data={"title": "No ar", "published_on": "2026-10-01"})
+    client.post(f"/episodios/{pub}/status", data={"status": "publicado"})
+    rec = _new(client, "Já gravado")
+    db.add(Recording(theme_id=rec, starts_at=datetime(2026, 10, 15, 20, 0)))
+    db.commit()
+    client.post(f"/episodios/{rec}/status", data={"status": "gravado"})
+    sch = _new(client, "Vai gravar")
+    db.add(Recording(theme_id=sch, starts_at=datetime.now() + timedelta(days=3)))
+    db.commit()
+    client.post(f"/episodios/{sch}/status", data={"status": "agendado"})
+
+    page = client.get("/episodios").text
+    assert "no ar em 01/10/2026" in page and "gravado em qui 15/10" in page and "🎙️ grava" in page
+    assert page.count('class="vote-chip') == 2  # still only the two ideas
     assert 'class="move"' not in page
