@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app import schedule
+from app import history, schedule
 from app.db import get_db
 from app.models import Member, Poll, PollResponse, PollSlot, Recording, Theme
 from app.web import BASE_URL, current_member, render
@@ -26,9 +26,12 @@ def _schedulable_themes(db: Session) -> list[Theme]:
     ).all()
 
 
-def _mark_theme_scheduled(theme: Theme | None) -> None:
-    if theme and theme.status in ("ideia", "pauta"):
-        theme.status = "agendado"
+def _booked(db: Session, theme: Theme | None, me: Member, starts_at: datetime) -> None:
+    if not theme:
+        return
+    history.log(db, theme, me, "gravacao", f"marcou a gravação para {schedule.fmt_slot(starts_at)}")
+    if theme.status in ("ideia", "pauta"):
+        history.set_status(db, theme, "agendado", me)
 
 
 @router.get("")
@@ -190,7 +193,7 @@ def book_recording(
     starts_at: datetime = Form(...),
     duration_minutes: int = Form(90),
     theme_id: str = Form(""),
-    _me: Member = Depends(current_member),
+    me: Member = Depends(current_member),
     db: Session = Depends(get_db),
 ):
     poll = _poll_or_404(db, poll_id)
@@ -209,7 +212,7 @@ def book_recording(
         free = schedule.free_throughout(poll, starts_at, duration)
         theme.participants = db.scalars(select(Member).where(Member.id.in_(free))).all() if free else []
     poll.closed = True
-    _mark_theme_scheduled(theme)
+    _booked(db, theme, me, starts_at)
     db.commit()
     return RedirectResponse(f"/agenda/{poll_id}", status_code=303)
 
@@ -247,7 +250,7 @@ def create_recording(
     duration_minutes: int = Form(90),
     theme_id: str = Form(""),
     notes: str = Form(""),
-    _me: Member = Depends(current_member),
+    me: Member = Depends(current_member),
     db: Session = Depends(get_db),
 ):
     theme = db.get(Theme, int(theme_id)) if theme_id.isdigit() else None
@@ -259,7 +262,7 @@ def create_recording(
             notes=notes.strip(),
         )
     )
-    _mark_theme_scheduled(theme)
+    _booked(db, theme, me, starts_at)
     db.commit()
     return RedirectResponse("/agenda", status_code=303)
 
@@ -279,21 +282,23 @@ def recording_ics(recording_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/gravacoes/{recording_id}/gravado")
-def mark_recorded(recording_id: int, _me: Member = Depends(current_member), db: Session = Depends(get_db)):
+def mark_recorded(recording_id: int, me: Member = Depends(current_member), db: Session = Depends(get_db)):
     recording = db.get(Recording, recording_id)
     if recording and recording.theme and recording.theme.status in ("ideia", "pauta", "agendado"):
-        recording.theme.status = "gravado"
+        history.set_status(db, recording.theme, "gravado", me)
         db.commit()
     return RedirectResponse("/agenda", status_code=303)
 
 
 @router.post("/gravacoes/{recording_id}/excluir")
-def delete_recording(recording_id: int, _me: Member = Depends(current_member), db: Session = Depends(get_db)):
+def delete_recording(recording_id: int, me: Member = Depends(current_member), db: Session = Depends(get_db)):
     recording = db.get(Recording, recording_id)
     if recording:
         theme = recording.theme
+        if theme:
+            history.log(db, theme, me, "gravacao", f"desmarcou a gravação de {schedule.fmt_slot(recording.starts_at)}")
+            if theme.status == "agendado":
+                history.set_status(db, theme, "pauta", me)
         db.delete(recording)
-        if theme and theme.status == "agendado":
-            theme.status = "pauta"
         db.commit()
     return RedirectResponse("/agenda", status_code=303)

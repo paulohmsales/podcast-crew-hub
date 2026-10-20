@@ -114,13 +114,19 @@ class Theme(Base):
     episode_url: Mapped[str] = mapped_column(String(500), default="", server_default="")
     published_on: Mapped[date | None] = mapped_column(Date)
     feed_guid: Mapped[str | None] = mapped_column(String(300), unique=True)  # set when imported from RSS
+    # The episode script ("roteiro"), edited together; version bumps on every save.
+    script: Mapped[str] = mapped_column(Text, default="", server_default="")
+    script_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    script_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
+    script_updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("members.id", ondelete="SET NULL"))
     created_by_id: Mapped[int] = mapped_column(ForeignKey("members.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
 
-    created_by: Mapped[Member] = relationship()
+    created_by: Mapped[Member] = relationship(foreign_keys=[created_by_id])
+    script_updated_by: Mapped[Member | None] = relationship(foreign_keys=[script_updated_by_id])
     segments: Mapped[list[Segment]] = relationship(secondary=theme_segments, order_by=Segment.position)
     participants: Mapped[list[Member]] = relationship(secondary=theme_participants, order_by=Member.name)
     games: Mapped[list[Game]] = relationship(secondary=theme_games, order_by=Game.name, backref="episodes")
@@ -132,6 +138,35 @@ class Theme(Base):
     @property
     def link_list(self) -> list[str]:
         return [l.strip() for l in self.links.splitlines() if l.strip()]
+
+
+class ThemeEvent(Base):
+    """One line of an episode's history ("Histórico")."""
+
+    __tablename__ = "theme_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    theme_id: Mapped[int] = mapped_column(ForeignKey("themes.id", ondelete="CASCADE"), index=True)
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("members.id", ondelete="SET NULL"))
+    kind: Mapped[str] = mapped_column(String(20))
+    text: Mapped[str] = mapped_column(Text)  # already worded for display, e.g. "moveu para Gravado"
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    member: Mapped[Member | None] = relationship()
+
+
+class ScriptRevision(Base):
+    """A saved copy of the script, to see and restore older versions."""
+
+    __tablename__ = "script_revisions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    theme_id: Mapped[int] = mapped_column(ForeignKey("themes.id", ondelete="CASCADE"), index=True)
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("members.id", ondelete="SET NULL"))
+    text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    member: Mapped[Member | None] = relationship()
 
 
 class ThemeVote(Base):

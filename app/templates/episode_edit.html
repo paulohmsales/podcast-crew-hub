@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ theme.title }} · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/episodios/{{ theme.id }}">← Voltar para o episódio</a></p>
+<h1>Editar episódio</h1>
+
+<form method="post" action="/episodios/{{ theme.id }}/editar" class="stack">
+  <section class="card stack">
+    <div class="row">
+      <label class="grow">Título <input name="title" value="{{ theme.title }}" required maxlength="200"></label>
+      <label class="num">Nº <input name="number" inputmode="numeric" pattern="[0-9]*" value="{{ theme.number or '' }}"></label>
+    </div>
+    <label>Pauta <textarea name="description" rows="6" placeholder="Do que o episódio fala, ângulo, perguntas…">{{ theme.description }}</textarea></label>
+    <label>Referências <span class="muted">(links, um por linha)</span> <textarea name="links" rows="3">{{ theme.links }}</textarea></label>
+  </section>
+
+  <section class="card stack">
+    <fieldset>
+      <legend>Quadros {% if not all_segments %}<a class="small" href="/quadros">criar quadros</a>{% endif %}</legend>
+      <div class="checks">
+        {% set mine = theme.segments | map(attribute='id') | list %}
+        {% for s in all_segments if not s.archived or s.id in mine %}
+        <label class="check pick"><input type="checkbox" name="segment_ids" value="{{ s.id }}" {{ 'checked' if s.id in mine }}> {{ s.name }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Participantes</legend>
+      <div class="checks">
+        {% set lineup = theme.participants | map(attribute='id') | list %}
+        {% for m in members %}
+        <label class="check pick"><input type="checkbox" name="member_ids" value="{{ m.id }}" {{ 'checked' if m.id in lineup }}> {{ m.name }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+  </section>
+
+  <section class="card stack">
+    <div class="row">
+      <label class="grow">Link do episódio <input type="url" name="episode_url" value="{{ theme.episode_url }}" placeholder="https://open.spotify.com/episode/..."></label>
+      <label>No ar em <input type="date" name="published_on" value="{{ theme.published_on.isoformat() if theme.published_on else '' }}"></label>
+    </div>
+  </section>
+
+  <div class="row form-foot">
+    <button class="btn primary">Salvar</button>
+    <a class="btn" href="/episodios/{{ theme.id }}">Cancelar</a>
+  </div>
+</form>
+
+{% if can_delete %}
+<form method="post" action="/episodios/{{ theme.id }}/excluir" class="footer-actions" onsubmit="return confirm('Excluir esse episódio? Não dá para desfazer.')">
+  <button class="link-btn danger">excluir episódio</button>
+</form>
+{% endif %}
+{% endblock %}

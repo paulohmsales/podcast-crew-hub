@@ -80,7 +80,7 @@ def fake_ludopedia(monkeypatch):
 def test_add_game_to_episode(client, db, fake_ludopedia):
     res = client.post("/episodios", data={"title": "Euros"})
     t = int(res.url.path.rsplit("/", 1)[1])
-    page = client.get(f"/episodios/{t}?jogo=terra").text
+    page = client.get(f"/episodios/{t}?aba=jogos&jogo=terra").text
     assert "Terra Mystica" in page and 'name="game_id" value="404"' in page
     client.post(f"/episodios/{t}/jogos", data={"game_id": "404"})
     db.expire_all()

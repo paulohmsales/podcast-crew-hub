@@ -3,7 +3,7 @@
   <form method="post" action="/episodios/{{ theme.id }}/voto" class="vote">
     <button type="submit" class="vote-btn {{ 'on' if theme.id in my_votes }}"
             aria-pressed="{{ 'true' if theme.id in my_votes else 'false' }}"
-            title="{{ 'Tirar meu voto' if theme.id in my_votes else 'Quero gravar esse' }}">
+            title="{{ 'Tirar meu voto' if theme.id in my_votes else 'Votar' }}">
       <span class="arrow">▲</span><span class="count">{{ votes }}</span>
     </button>
   </form>

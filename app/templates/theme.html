@@ -1,114 +1,121 @@
 {% extends "base.html" %}
 {% block title %}{{ theme.title }} · Então Ganhei{% endblock %}
+{% block page_class %}mid{% endblock %}
 {% block content %}
 <p class="crumb"><a href="/episodios">← Episódios</a></p>
 
-<article class="card">
-  <div class="theme-head">
-    <form method="post" action="/episodios/{{ theme.id }}/voto" class="vote">
-      <button type="submit" class="vote-btn big {{ 'on' if voted }}" aria-pressed="{{ 'true' if voted else 'false' }}"
-              title="{{ 'Tirar meu voto' if voted else 'Quero gravar esse' }}">
-        <span class="arrow">▲</span><span class="count">{{ voters | length }}</span>
-      </button>
-    </form>
-    <div>
-      <h1>{% if theme.number %}<span class="ep-num">#{{ theme.number }}</span>{% endif %}{{ theme.title }}</h1>
-      <p class="meta">
-        <span class="pill status-{{ theme.status }}">{{ STATUSES[theme.status] }}</span>
-        sugerido por {{ theme.created_by.name }} em {{ fmt_day(theme.created_at.date()) }}
-        {% if theme.published_on %} · no ar em {{ fmt_day(theme.published_on) }}/{{ theme.published_on.year }}{% endif %}
-      </p>
-    </div>
-  </div>
-
-  {% if theme.episode_url %}
-  <p><a class="btn primary" href="{{ theme.episode_url }}" target="_blank" rel="noopener">▶ Ouvir o episódio</a></p>
-  {% endif %}
-
-  <dl class="facts">
-    <dt>Quadros</dt>
-    <dd>{% for s in theme.segments %}<span class="chip seg">{{ s.name }}</span>{% else %}<span class="muted">nenhum</span>{% endfor %}</dd>
-    <dt>Participantes</dt>
-    <dd>{% if theme.participants %}{{ theme.participants | map(attribute='name') | join(', ') }}{% else %}<span class="muted">ninguém ainda</span>{% endif %}</dd>
-    {% if recordings %}
-    <dt>Gravação</dt>
-    <dd>{% for r in recordings %}{{ fmt_slot(r.starts_at) }}{{ ", " if not loop.last }}{% endfor %}</dd>
-    {% endif %}
-  </dl>
-
-  {% if theme.description %}<div class="prose">{{ theme.description }}</div>{% endif %}
-
-  {% if theme.link_list %}
-  <ul class="links">
-    {% for link in theme.link_list %}
-    <li>{% if link.startswith('http') %}<a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a>{% else %}{{ link }}{% endif %}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
-
-  <p class="muted small">
-    {% if voters %}Querem gravar: {{ voters | map(attribute='name') | join(', ') }}{% else %}Ninguém votou ainda.{% endif %}
+<header class="ep-head">
+  <form method="post" action="/episodios/{{ theme.id }}/status" class="status-form">
+    <label class="sr-only" for="status">Status</label>
+    <select id="status" name="status" class="status-select status-{{ theme.status }}" onchange="this.form.submit()">
+      {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if theme.status == key }}>{{ label }}</option>{% endfor %}
+    </select>
+    <noscript><button class="btn small">Mudar</button></noscript>
+  </form>
+  <h1>{% if theme.number %}<span class="ep-num">#{{ theme.number }}</span>{% endif %}{{ theme.title }}</h1>
+  <p class="meta">
+    sugerido por {{ theme.created_by.name }} em {{ fmt_day(theme.created_at.date()) }}
+    {% if theme.published_on %} · no ar em {{ fmt_day(theme.published_on) }}/{{ theme.published_on.year }}{% endif %}
   </p>
-
   <div class="actions">
-    <form method="post" action="/episodios/{{ theme.id }}/status" class="inline">
-      <label class="sr-only" for="status">Status</label>
-      <select id="status" name="status" onchange="this.form.submit()">
-        {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if theme.status == key }}>{{ label }}</option>{% endfor %}
-      </select>
-      <noscript><button class="btn">Mudar</button></noscript>
+    <form method="post" action="/episodios/{{ theme.id }}/voto" class="inline">
+      <button class="vote-chip big-chip {{ 'on' if voted }}" aria-pressed="{{ 'true' if voted else 'false' }}"
+              title="{{ 'Tirar meu voto' if voted else 'Votar' }}">▲ {{ voters | length }} voto{{ 's' if voters | length != 1 }}</button>
     </form>
-    {% if theme.status in ('ideia', 'pauta', 'agendado') %}
-    <a class="btn" href="/agenda/nova?tema={{ theme.id }}">📅 Marcar gravação</a>
-    {% endif %}
+    {% if theme.episode_url %}<a class="btn small primary" href="{{ theme.episode_url }}" target="_blank" rel="noopener">▶ Ouvir</a>{% endif %}
+    {% if theme.status in ('ideia', 'pauta', 'agendado') %}<a class="btn small" href="/agenda/nova?tema={{ theme.id }}">📅 Marcar gravação</a>{% endif %}
+    <a class="btn small" href="/episodios/{{ theme.id }}/editar">✎ Editar</a>
   </div>
+</header>
 
-  <details class="edit" {{ 'open' if request.query_params.get('editar') }}>
-    <summary class="btn">Editar episódio</summary>
-    <form method="post" action="/episodios/{{ theme.id }}/editar" class="stack">
-      <div class="row">
-        <label class="grow">Título <input name="title" value="{{ theme.title }}" required maxlength="200"></label>
-        <label class="num">Nº <input name="number" inputmode="numeric" pattern="[0-9]*" value="{{ theme.number or '' }}"></label>
-      </div>
+<nav class="ep-tabs" aria-label="Seções do episódio">
+  {% for key, label in tabs.items() %}
+  <a href="/episodios/{{ theme.id }}{{ '' if key == 'resumo' else '?aba=' ~ key }}" class="{{ 'active' if tab == key }}" {{ 'aria-current=page' if tab == key }}>
+    {{ label }}
+    {%- if key == 'jogos' and theme.games %} <span>{{ theme.games | length }}</span>{% endif %}
+    {%- if key == 'conversa' and theme.comments %} <span>{{ theme.comments | length }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</nav>
 
-      <fieldset>
-        <legend>Quadros {% if not all_segments %}<a class="small" href="/quadros">criar quadros</a>{% endif %}</legend>
-        <div class="checks">
-          {% set mine = theme.segments | map(attribute='id') | list %}
-          {% for s in all_segments if not s.archived or s.id in mine %}
-          <label class="check pick"><input type="checkbox" name="segment_ids" value="{{ s.id }}" {{ 'checked' if s.id in mine }}> {{ s.name }}</label>
-          {% endfor %}
-        </div>
-      </fieldset>
+{% if error %}<p class="card callout error" role="alert">{{ error }}</p>{% endif %}
 
-      <fieldset>
-        <legend>Participantes</legend>
-        <div class="checks">
-          {% set lineup = theme.participants | map(attribute='id') | list %}
-          {% for m in members %}
-          <label class="check pick"><input type="checkbox" name="member_ids" value="{{ m.id }}" {{ 'checked' if m.id in lineup }}> {{ m.name }}</label>
-          {% endfor %}
-        </div>
-      </fieldset>
-
-      <div class="row">
-        <label class="grow">Link do episódio <input type="url" name="episode_url" value="{{ theme.episode_url }}" placeholder="https://open.spotify.com/episode/..."></label>
-        <label>No ar em <input type="date" name="published_on" value="{{ theme.published_on.isoformat() if theme.published_on else '' }}"></label>
-      </div>
-      <label>Ideia / pauta <textarea name="description" rows="5">{{ theme.description }}</textarea></label>
-      <label>Links de referência <span class="muted">(um por linha)</span> <textarea name="links" rows="3">{{ theme.links }}</textarea></label>
-      <button class="btn primary">Salvar</button>
-    </form>
-    {% if can_delete %}
-    <form method="post" action="/episodios/{{ theme.id }}/excluir" onsubmit="return confirm('Excluir esse episódio?')">
-      <button class="link-btn danger">excluir episódio</button>
-    </form>
+{% if tab == 'resumo' %}
+<div class="ep-grid">
+  <section class="card">
+    <h2>Pauta</h2>
+    {% if theme.description %}<div class="prose">{{ theme.description }}</div>
+    {% else %}<p class="muted">Ainda sem pauta. <a href="/episodios/{{ theme.id }}/editar">Escrever</a></p>{% endif %}
+    {% if theme.link_list %}
+    <h3 class="small-h">Referências</h3>
+    <ul class="links">
+      {% for link in theme.link_list %}
+      <li>{% if link.startswith('http') %}<a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a>{% else %}{{ link }}{% endif %}</li>
+      {% endfor %}
+    </ul>
     {% endif %}
-  </details>
-</article>
+  </section>
 
-<section class="card" id="jogos">
-  <h2>Jogos</h2>
+  <section class="card details">
+    <h2>Detalhes</h2>
+    <dl class="facts">
+      <dt>Quadros</dt>
+      <dd>{% for s in theme.segments %}<span class="chip seg">{{ s.name }}</span>{% else %}<span class="muted">—</span>{% endfor %}</dd>
+      <dt>Participantes</dt>
+      <dd>{% if theme.participants %}{{ theme.participants | map(attribute='name') | join(', ') }}{% else %}<span class="muted">—</span>{% endif %}</dd>
+      <dt>Gravação</dt>
+      <dd>{% for r in recordings %}{{ fmt_slot(r.starts_at) }}{{ ", " if not loop.last }}{% else %}<span class="muted">—</span>{% endfor %}</dd>
+      <dt>Jogos</dt>
+      <dd>{% for g in theme.games %}<a href="/jogos/{{ g.id }}">{{ g.name }}</a>{{ ", " if not loop.last }}{% else %}<a class="muted" href="?aba=jogos">adicionar</a>{% endfor %}</dd>
+      <dt>Roteiro</dt>
+      <dd>{% if theme.script %}<a href="?aba=roteiro">{{ theme.script.split() | length }} palavras</a>{% if theme.script_updated_by %} <span class="muted">· {{ theme.script_updated_by.name }}, {{ theme.script_updated_at.strftime('%d/%m') }}</span>{% endif %}
+          {% else %}<a class="muted" href="?aba=roteiro">começar</a>{% endif %}</dd>
+      <dt>Votos</dt>
+      <dd>{% if voters %}{{ voters | map(attribute='name') | join(', ') }}{% else %}<span class="muted">—</span>{% endif %}</dd>
+    </dl>
+  </section>
+</div>
+
+{% elif tab == 'roteiro' %}
+<section class="card script-card">
+  <div class="script-bar">
+    <span id="script-status" class="muted small" aria-live="polite">
+      {% if theme.script_updated_by %}Última edição: {{ theme.script_updated_by.name }}, {{ theme.script_updated_at.strftime('%d/%m %H:%M') }}{% else %}Roteiro vazio. Comece a escrever.{% endif %}
+    </span>
+    <span id="script-presence" class="small presence" aria-live="polite"></span>
+    <a class="btn small" href="/episodios/{{ theme.id }}/roteiro.txt">Baixar</a>
+  </div>
+  <label class="sr-only" for="script">Roteiro</label>
+  <textarea id="script" class="script" spellcheck="true"
+            data-url="/episodios/{{ theme.id }}/roteiro" data-version="{{ theme.script_version }}"
+            placeholder="Abertura, blocos, perguntas, encerramento…  Salva sozinho; todo mundo pode editar ao mesmo tempo.">{{ theme.script }}</textarea>
+  <p class="muted small">Salva sozinho enquanto você digita. Se duas pessoas editarem ao mesmo tempo, as mudanças das duas são juntadas.</p>
+</section>
+
+{% if revisions %}
+<section class="card">
+  <details>
+    <summary class="link-btn">Versões anteriores ({{ revisions | length }})</summary>
+    <ul class="plain revisions">
+      {% for r in revisions %}
+      <li>
+        <div class="rev-head">
+          <span><strong>{{ r.member.name if r.member else '—' }}</strong> <span class="muted small">{{ r.created_at.strftime('%d/%m %H:%M') }} · {{ r.text.split() | length }} palavras</span></span>
+          <form method="post" action="/episodios/{{ theme.id }}/roteiro/versoes/{{ r.id }}/restaurar" class="inline"
+                onsubmit="return confirm('Voltar o roteiro para esta versão? A versão atual continua no histórico.')">
+            <button class="link-btn">restaurar</button>
+          </form>
+        </div>
+        <details><summary class="link-btn small">ver</summary><pre class="rev-text">{{ r.text }}</pre></details>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+</section>
+{% endif %}
+
+{% elif tab == 'jogos' %}
+<section class="card">
   {% if theme.games %}
   <ul class="plain game-list">
     {% for g in theme.games %}
@@ -129,14 +136,14 @@
   {% endif %}
 
   {% if ludopedia_ready %}
-  <form method="get" action="/episodios/{{ theme.id }}#jogos" class="toolbar game-search" role="search">
-    <input type="search" name="jogo" value="{{ jogo }}" placeholder="Buscar jogo na Ludopedia…" aria-label="Buscar jogo para adicionar">
+  <form method="get" action="/episodios/{{ theme.id }}" class="toolbar game-search" role="search">
+    <input type="hidden" name="aba" value="jogos">
+    <input type="search" name="jogo" value="{{ jogo }}" placeholder="Buscar jogo na Ludopedia para adicionar…" aria-label="Buscar jogo para adicionar">
     <button class="btn">Buscar</button>
   </form>
   {% else %}
   <p class="muted small">Busca de jogos indisponível: a Ludopedia ainda não foi conectada.</p>
   {% endif %}
-  {% if game_error %}<p class="error" role="alert">{{ game_error }}</p>{% endif %}
   {% if jogo and game_results %}
   <ul class="plain game-list results">
     {% for g in game_results %}
@@ -153,13 +160,13 @@
     </li>
     {% endfor %}
   </ul>
-  {% elif jogo and not game_error %}
+  {% elif jogo and not error %}
   <p class="muted">Nada encontrado para "{{ jogo }}".</p>
   {% endif %}
 </section>
 
+{% elif tab == 'conversa' %}
 <section class="card" id="comentarios">
-  <h2>Conversa</h2>
   {% if theme.comments %}
   <ul class="plain comments">
     {% for c in theme.comments %}
@@ -186,4 +193,27 @@
     <button class="btn primary">Comentar</button>
   </form>
 </section>
+
+{% elif tab == 'historico' %}
+<section class="card">
+  {% if events %}
+  <ol class="plain timeline">
+    {% for e in events %}
+    <li class="ev-{{ e.kind }}">
+      <span class="avatar" aria-hidden="true">{{ (e.member.name if e.member else '?')[:1] | upper }}</span>
+      <span><strong>{{ e.member.name if e.member else 'Alguém' }}</strong> {{ e.text }}</span>
+      <time class="muted small" datetime="{{ e.created_at.isoformat() }}">{{ fmt_day(e.created_at.date()) }} {{ e.created_at.strftime('%H:%M') }}</time>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="muted">Nada registrado ainda. A partir de agora, mudanças neste episódio aparecem aqui.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>document.querySelector(".ep-tabs .active")?.scrollIntoView({ block: "nearest", inline: "nearest" });</script>
+{% if tab == 'roteiro' %}<script src="/static/script.js?v=1" defer></script>{% endif %}
 {% endblock %}

@@ -3,14 +3,24 @@
 from datetime import date, datetime
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Body, Depends, Form, HTTPException, Request
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import feed, ludopedia
+from app import feed, history, ludopedia
 from app.db import get_db
-from app.models import THEME_STATUSES, Game, Member, Recording, Segment, Theme, ThemeComment, ThemeVote
+from app.models import (
+    THEME_STATUSES,
+    Member,
+    Recording,
+    ScriptRevision,
+    Segment,
+    Theme,
+    ThemeComment,
+    ThemeEvent,
+    ThemeVote,
+)
 from app.web import admin_member, current_member, render
 
 router = APIRouter(prefix="/episodios")
@@ -52,12 +62,6 @@ def _next_recordings(db: Session) -> dict[int, datetime]:
         .group_by(Recording.theme_id)
     ).all()
     return dict(rows)
-
-
-def set_status(theme: Theme, status: str) -> None:
-    theme.status = status
-    if status == "publicado" and not theme.published_on:
-        theme.published_on = date.today()
 
 
 @router.get("")
@@ -159,45 +163,74 @@ def create_theme(
     theme = Theme(title=title[:200], description=description.strip(), links=links.strip(), created_by_id=me.id)
     db.add(theme)
     db.flush()
-    db.add(ThemeVote(theme_id=theme.id, member_id=me.id))  # suggesting counts as wanting it
+    db.add(ThemeVote(theme_id=theme.id, member_id=me.id))  # suggesting counts as a vote
+    history.log(db, theme, me, "criado", "sugeriu o episódio")
     db.commit()
     return RedirectResponse(f"/episodios/{theme.id}", status_code=303)
+
+
+TABS = {"resumo": "Resumo", "roteiro": "Roteiro", "jogos": "Jogos", "conversa": "Conversa", "historico": "Histórico"}
+
+
+def _ep_url(theme_id: int, tab: str = "resumo", **params) -> str:
+    query = "&".join(f"{k}={quote(str(v))}" for k, v in params.items() if v)
+    base = f"/episodios/{theme_id}" + ("" if tab == "resumo" else f"?aba={tab}")
+    return base + (("&" if "?" in base else "?") + query if query else "")
 
 
 @router.get("/{theme_id}")
 def show_theme(
     theme_id: int,
     request: Request,
+    aba: str = "resumo",
     jogo: str = "",
     erro: str = "",
     me: Member = Depends(current_member),
     db: Session = Depends(get_db),
 ):
     theme = _theme_or_404(db, theme_id)
-    game_results, game_error = [], erro
-    if jogo.strip():
-        try:
-            game_results, _ = ludopedia.search(jogo)
-        except ludopedia.LudopediaError as e:
-            game_error = str(e)
+    tab = aba if aba in TABS else "resumo"
     voters = sorted((v.member for v in theme.votes), key=lambda m: m.name)
-    recordings = db.scalars(select(Recording).where(Recording.theme_id == theme.id).order_by(Recording.starts_at)).all()
-    return render(
-        request,
-        "theme.html",
-        me,
+    ctx = dict(
         theme=theme,
+        tab=tab,
+        tabs=TABS,
         voters=voters,
         voted=any(v.id == me.id for v in voters),
-        can_delete=me.is_admin or theme.created_by_id == me.id,
-        recordings=recordings,
+        recordings=db.scalars(
+            select(Recording).where(Recording.theme_id == theme.id).order_by(Recording.starts_at)
+        ).all(),
+        error=erro,
+    )
+    if tab == "jogos":
+        ctx.update(jogo=jogo, game_results=[], attached={g.id for g in theme.games}, ludopedia_ready=ludopedia.configured())
+        if jogo.strip():
+            try:
+                ctx["game_results"], _ = ludopedia.search(jogo)
+            except ludopedia.LudopediaError as e:
+                ctx["error"] = str(e)
+    elif tab == "historico":
+        ctx["events"] = db.scalars(
+            select(ThemeEvent).where(ThemeEvent.theme_id == theme.id).order_by(ThemeEvent.created_at.desc())
+        ).all()
+    elif tab == "roteiro":
+        ctx["revisions"] = db.scalars(
+            select(ScriptRevision).where(ScriptRevision.theme_id == theme.id).order_by(ScriptRevision.created_at.desc()).limit(30)
+        ).all()
+    return render(request, "theme.html", me, **ctx)
+
+
+@router.get("/{theme_id}/editar")
+def edit_page(theme_id: int, request: Request, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    theme = _theme_or_404(db, theme_id)
+    return render(
+        request,
+        "episode_edit.html",
+        me,
+        theme=theme,
         members=db.scalars(select(Member).order_by(Member.name)).all(),
         all_segments=db.scalars(select(Segment).order_by(Segment.archived, Segment.position, Segment.name)).all(),
-        jogo=jogo,
-        game_results=game_results,
-        game_error=game_error,
-        attached={g.id for g in theme.games},
-        ludopedia_ready=ludopedia.configured(),
+        can_delete=me.is_admin or theme.created_by_id == me.id,
     )
 
 
@@ -212,47 +245,130 @@ def edit_theme(
     published_on: str = Form(""),
     segment_ids: list[int] = Form([]),
     member_ids: list[int] = Form([]),
-    _me: Member = Depends(current_member),
+    me: Member = Depends(current_member),
     db: Session = Depends(get_db),
 ):
     theme = _theme_or_404(db, theme_id)
+    try:
+        new_date = date.fromisoformat(published_on) if published_on else None
+    except ValueError:
+        raise HTTPException(400, "Data inválida.")
+    before = _snapshot(theme)
     if title.strip():
         theme.title = title.strip()[:200]
     theme.description = description.strip()
     theme.links = links.strip()
     theme.number = int(number) if number.strip().isdigit() else None
     theme.episode_url = episode_url.strip()[:500]
-    try:
-        theme.published_on = date.fromisoformat(published_on) if published_on else None
-    except ValueError:
-        raise HTTPException(400, "Data inválida.")
+    theme.published_on = new_date
     theme.segments = db.scalars(select(Segment).where(Segment.id.in_(segment_ids))).all() if segment_ids else []
     theme.participants = db.scalars(select(Member).where(Member.id.in_(member_ids))).all() if member_ids else []
+    changed = [label for label, value in _snapshot(theme).items() if before[label] != value]
+    if changed:
+        history.log(db, theme, me, "edicao", "editou " + _join(changed))
     db.commit()
     return RedirectResponse(f"/episodios/{theme_id}", status_code=303)
 
 
+def _snapshot(theme: Theme) -> dict:
+    return {
+        "o título": theme.title,
+        "a pauta": theme.description,
+        "os links": theme.links,
+        "o número": theme.number,
+        "o link do episódio": theme.episode_url,
+        "a data de publicação": theme.published_on,
+        "os quadros": sorted(s.id for s in theme.segments),
+        "os participantes": sorted(m.id for m in theme.participants),
+    }
+
+
+def _join(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " e " + items[-1]
+
+
+# --- script -------------------------------------------------------------------
+
+
+def _script_state(theme: Theme, me: Member) -> dict:
+    return {
+        "version": theme.script_version,
+        "text": theme.script,
+        "updated_by": theme.script_updated_by.name if theme.script_updated_by else None,
+        "updated_at": theme.script_updated_at.strftime("%d/%m %H:%M") if theme.script_updated_at else None,
+        "editing": history.touch_editing(theme.id, me.name),
+    }
+
+
+@router.get("/{theme_id}/roteiro.json")
+def script_state(theme_id: int, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    return _script_state(_theme_or_404(db, theme_id), me)
+
+
+@router.post("/{theme_id}/roteiro")
+def save_script(
+    theme_id: int,
+    base_version: int = Body(...),
+    base_text: str = Body(...),
+    text: str = Body(...),
+    me: Member = Depends(current_member),
+    db: Session = Depends(get_db),
+):
+    theme = _theme_or_404(db, theme_id)
+    try:
+        history.save_script(db, theme, me, base_version, base_text, text)
+    except history.ScriptConflict:
+        return JSONResponse({"conflict": True, **_script_state(theme, me)}, status_code=409)
+    return _script_state(theme, me)
+
+
+@router.get("/{theme_id}/roteiro.txt")
+def script_download(theme_id: int, _me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    theme = _theme_or_404(db, theme_id)
+    name = f"roteiro-{theme.number or theme.id}.txt"
+    return PlainTextResponse(theme.script, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.post("/{theme_id}/roteiro/versoes/{revision_id}/restaurar")
+def restore_script(theme_id: int, revision_id: int, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    theme = _theme_or_404(db, theme_id)
+    revision = db.get(ScriptRevision, revision_id)
+    if not revision or revision.theme_id != theme_id:
+        raise HTTPException(404)
+    history.save_script(db, theme, me, theme.script_version, theme.script, revision.text)
+    history.log(db, theme, me, "roteiro", f"restaurou a versão do roteiro de {revision.created_at:%d/%m %H:%M}")
+    db.commit()
+    return RedirectResponse(_ep_url(theme_id, "roteiro"), status_code=303)
+
+
+# --- games --------------------------------------------------------------------
+
+
 @router.post("/{theme_id}/jogos")
 def add_game(
-    theme_id: int, game_id: int = Form(...), _me: Member = Depends(current_member), db: Session = Depends(get_db)
+    theme_id: int, game_id: int = Form(...), me: Member = Depends(current_member), db: Session = Depends(get_db)
 ):
     theme = _theme_or_404(db, theme_id)
     try:
         game = ludopedia.get_game(db, game_id)
     except ludopedia.LudopediaError as e:
-        return RedirectResponse(f"/episodios/{theme_id}?erro={quote(str(e))}#jogos", status_code=303)
+        return RedirectResponse(_ep_url(theme_id, "jogos", erro=str(e)), status_code=303)
     if game not in theme.games:
         theme.games.append(game)
+        history.log(db, theme, me, "jogo", f"adicionou o jogo {game.name}")
         db.commit()
-    return RedirectResponse(f"/episodios/{theme_id}#jogos", status_code=303)
+    return RedirectResponse(_ep_url(theme_id, "jogos"), status_code=303)
 
 
 @router.post("/{theme_id}/jogos/{game_id}/remover")
-def remove_game(theme_id: int, game_id: int, _me: Member = Depends(current_member), db: Session = Depends(get_db)):
+def remove_game(theme_id: int, game_id: int, me: Member = Depends(current_member), db: Session = Depends(get_db)):
     theme = _theme_or_404(db, theme_id)
-    theme.games = [g for g in theme.games if g.id != game_id]
-    db.commit()
-    return RedirectResponse(f"/episodios/{theme_id}#jogos", status_code=303)
+    removed = [g for g in theme.games if g.id == game_id]
+    if removed:
+        theme.games = [g for g in theme.games if g.id != game_id]
+        history.log(db, theme, me, "jogo", f"tirou o jogo {removed[0].name}")
+        db.commit()
+    return RedirectResponse(_ep_url(theme_id, "jogos"), status_code=303)
 
 
 @router.post("/{theme_id}/voto")
@@ -272,13 +388,13 @@ def change_status(
     theme_id: int,
     request: Request,
     status: str = Form(...),
-    _me: Member = Depends(current_member),
+    me: Member = Depends(current_member),
     db: Session = Depends(get_db),
 ):
     if status not in THEME_STATUSES:
         raise HTTPException(400, "Status inválido.")
     theme = _theme_or_404(db, theme_id)
-    set_status(theme, status)
+    history.set_status(db, theme, status, me)
     db.commit()
     if "application/json" in request.headers.get("accept", ""):  # board drag and drop
         return JSONResponse({"ok": True, "status": status})
@@ -292,11 +408,12 @@ def add_comment(
     me: Member = Depends(current_member),
     db: Session = Depends(get_db),
 ):
-    _theme_or_404(db, theme_id)
+    theme = _theme_or_404(db, theme_id)
     if body.strip():
         db.add(ThemeComment(theme_id=theme_id, member_id=me.id, body=body.strip()))
+        history.log(db, theme, me, "comentario", "comentou na conversa")
         db.commit()
-    return RedirectResponse(f"/episodios/{theme_id}#comentarios", status_code=303)
+    return RedirectResponse(_ep_url(theme_id, "conversa"), status_code=303)
 
 
 @router.post("/{theme_id}/comentarios/{comment_id}/excluir")
@@ -307,7 +424,7 @@ def delete_comment(
     if comment and comment.theme_id == theme_id and (comment.member_id == me.id or me.is_admin):
         db.delete(comment)
         db.commit()
-    return RedirectResponse(f"/episodios/{theme_id}#comentarios", status_code=303)
+    return RedirectResponse(_ep_url(theme_id, "conversa"), status_code=303)
 
 
 @router.post("/{theme_id}/excluir")

@@ -23,8 +23,8 @@ def test_theme_create_vote_comment_status(client, ana_client, db):
     assert db.query(ThemeVote).filter_by(theme_id=theme_id).count() == 1
 
     ana_client.post(f"/episodios/{theme_id}/comentarios", data={"body": "Adiciono Love Letter"})
-    page = client.get(f"/episodios/{theme_id}").text
-    assert "Adiciono Love Letter" in page and "Coup, Skull" in page
+    assert "Coup, Skull" in client.get(f"/episodios/{theme_id}").text
+    assert "Adiciono Love Letter" in client.get(f"/episodios/{theme_id}?aba=conversa").text
 
     client.post(f"/episodios/{theme_id}/status", data={"status": "pauta"})
     db.expire_all()
