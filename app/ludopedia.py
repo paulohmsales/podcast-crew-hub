@@ -21,7 +21,10 @@ API = "https://ludopedia.com.br/api/v1"
 SEARCH_TTL = 600  # seconds
 DETAIL_MAX_AGE_DAYS = 30
 
-_search_cache: dict[tuple[str, int], tuple[float, dict]] = {}
+MECHANICS_TTL = 24 * 3600
+
+_search_cache: dict[tuple[str, int, int | None], tuple[float, dict]] = {}
+_mechanics_cache: list = []  # [expires_at, [(id, name), ...]]
 
 
 class LudopediaError(Exception):
@@ -53,18 +56,23 @@ def _get(path: str, params: dict | None = None) -> dict:
         raise LudopediaError(f"Não consegui falar com a Ludopedia: {e}") from e
 
 
-def search(query: str, page: int = 1, rows: int = 20) -> tuple[list[dict], int]:
-    """Games whose name matches. Returns (results, total); each result has
-    id, name, original_name, thumb, link."""
+def search(query: str, page: int = 1, rows: int = 20, mechanic: int | None = None) -> tuple[list[dict], int]:
+    """Games whose name matches and/or that use a mechanic, most popular first.
+    Returns (results, total); each result has id, name, original_name, thumb, link."""
     query = query.strip()
-    if not query:
+    if not query and not mechanic:
         return [], 0
-    key = (query.lower(), page)
+    key = (query.lower(), page, mechanic)
     hit = _search_cache.get(key)
     if hit and hit[0] > time.monotonic():
         data = hit[1]
     else:
-        data = _get("/jogos", {"search": query, "page": page, "rows": rows})
+        params = {"page": page, "rows": rows}
+        if query:
+            params["search"] = query
+        if mechanic:
+            params["id_mecanica"] = mechanic  # in the API docs' text, not its parameter list
+        data = _get("/jogos", params)
         _search_cache[key] = (time.monotonic() + SEARCH_TTL, data)
     results = [
         {
@@ -79,11 +87,26 @@ def search(query: str, page: int = 1, rows: int = 20) -> tuple[list[dict], int]:
     return results, int(data.get("total") or len(results))
 
 
+def mechanics() -> list[tuple[int, str]]:
+    """All of Ludopedia's mechanics as (id, name), alphabetical. Cached for a day."""
+    if _mechanics_cache and _mechanics_cache[0] > time.monotonic():
+        return _mechanics_cache[1]
+    items = [
+        (m["id_mecanica"], m["nm_mecanica"])
+        for m in _get("/mecanicas").get("mecanicas") or []
+        if not m.get("nm_mecanica", "").endswith("_deleted")
+    ]
+    _mechanics_cache[:] = [time.monotonic() + MECHANICS_TTL, items]
+    return items
+
+
 def _fix_link(link: str) -> str:
-    # The API sometimes returns "https:ludopedia.com.br/..." (no slashes).
-    if link.startswith("https:") and not link.startswith("https://"):
+    # The API returns "jogo/azul" in searches and sometimes "https:ludopedia.com.br/..." in details.
+    if not link or link.startswith("https://"):
+        return link
+    if link.startswith("https:"):
         return "https://" + link[len("https:"):].lstrip("/")
-    return link
+    return "https://ludopedia.com.br/" + link.lstrip("/")
 
 
 def _names(items, key: str) -> str:

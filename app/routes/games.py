@@ -15,14 +15,24 @@ router = APIRouter(prefix="/jogos")
 
 @router.get("")
 def games(
-    request: Request, q: str = "", page: int = 1, me: Member = Depends(current_member), db: Session = Depends(get_db)
+    request: Request,
+    q: str = "",
+    mecanica: str = "",
+    page: int = 1,
+    me: Member = Depends(current_member),
+    db: Session = Depends(get_db),
 ):
-    results, total, error = [], 0, None
-    if q.strip():
+    results, total, error, mechanics = [], 0, None, []
+    mechanic = int(mecanica) if mecanica.isdigit() else None
+    if ludopedia.configured():
         try:
-            results, total = ludopedia.search(q, page=max(1, page))
+            mechanics = ludopedia.mechanics()
+            if q.strip() or mechanic:
+                results, total = ludopedia.search(q, page=max(1, page), mechanic=mechanic)
         except ludopedia.LudopediaError as e:
             error = str(e)
+    elif q.strip() or mechanic:
+        error = "A integração com a Ludopedia ainda não foi configurada (LUDOPEDIA_TOKEN)."
     covered = db.scalars(select(Game).where(Game.id.in_(select(theme_games.c.game_id))).order_by(Game.name)).all()
     covered_ids = {g.id for g in covered}
     return render(
@@ -30,6 +40,9 @@ def games(
         "games.html",
         me,
         q=q,
+        mechanic=mechanic,
+        mechanic_name=dict(mechanics).get(mechanic, ""),
+        mechanics=mechanics,
         page=page,
         results=results,
         total=total,

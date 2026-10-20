@@ -137,7 +137,7 @@ def import_feed(
     request: Request, url: str = Form(...), me: Member = Depends(admin_member), db: Session = Depends(get_db)
 ):
     try:
-        episodes = feed.parse(feed.fetch(url.strip()))
+        episodes = feed.load(url)
     except feed.FeedError as e:
         return render(request, "import.html", me, url=url, error=str(e))
     created, skipped = feed.import_episodes(db, episodes, me)

@@ -5,7 +5,7 @@ version: "3.8"
 services:
   web:
     image: entaoganhei:latest
-    env_file: /opt/entaoganhei/.env  # LUDOPEDIA_TOKEN
+    env_file: /opt/entaoganhei/.env  # LUDOPEDIA_TOKEN, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
     environment:
       DATABASE_URL: sqlite:////data/entao-ganhei.db
       DATA_DIR: /data

@@ -5,16 +5,23 @@
 {% if not ready %}{% include "_ludopedia_setup.html" %}{% endif %}
 
 <form class="toolbar" method="get" action="/jogos" role="search">
-  <input type="search" name="q" value="{{ q }}" placeholder="Buscar jogo na Ludopedia…" aria-label="Buscar jogo" {{ 'autofocus' if not q }}>
+  <input type="search" name="q" value="{{ q }}" placeholder="Nome do jogo…" aria-label="Nome do jogo">
+  {% if mechanics %}
+  <select name="mecanica" aria-label="Mecânica">
+    <option value="">Qualquer mecânica</option>
+    {% for id, name in mechanics %}<option value="{{ id }}" {{ 'selected' if mechanic == id }}>{{ name }}</option>{% endfor %}
+  </select>
+  {% endif %}
   <button class="btn primary">Buscar</button>
 </form>
+<p class="muted small">Busque pelo nome, por uma mecânica (ex.: Alocação de Trabalhadores, Dedução) ou os dois. Os mais populares na Ludopedia aparecem primeiro.</p>
 
 {% if error %}<p class="card callout error" role="alert">{{ error }}</p>{% endif %}
 
-{% if q %}
+{% if q or mechanic %}
 <section class="card">
   <div class="card-head">
-    <h2>Resultados para "{{ q }}"</h2>
+    <h2>{% if q %}"{{ q }}"{% endif %}{% if q and mechanic_name %} · {% endif %}{{ mechanic_name }}</h2>
     <span class="muted small">{{ total }} jogo{{ 's' if total != 1 }}</span>
   </div>
   {% if results %}
@@ -33,8 +40,9 @@
     {% endfor %}
   </ul>
   <div class="row pager">
-    {% if page > 1 %}<a class="btn small" href="?q={{ q | urlencode }}&page={{ page - 1 }}">← Anteriores</a>{% endif %}
-    {% if page * 20 < total %}<a class="btn small" href="?q={{ q | urlencode }}&page={{ page + 1 }}">Mais →</a>{% endif %}
+    {% set qs = "q=" ~ (q | urlencode) ~ "&mecanica=" ~ (mechanic or "") %}
+    {% if page > 1 %}<a class="btn small" href="?{{ qs }}&page={{ page - 1 }}">← Anteriores</a>{% endif %}
+    {% if page * 20 < total %}<a class="btn small" href="?{{ qs }}&page={{ page + 1 }}">Mais →</a>{% endif %}
   </div>
   {% elif not error %}
   <p class="muted">Nada encontrado.</p>

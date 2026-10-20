@@ -3,7 +3,7 @@
     python -m app.cli add-member "Paulo" paulo@x.com --admin
     python -m app.cli first-access "Paulo" [--email paulo@x.com]
     python -m app.cli list
-    python -m app.cli import-feed https://anchor.fm/s/.../podcast/rss
+    python -m app.cli import-feed https://anchor.fm/s/.../podcast/rss   (or a Spotify show link)
 
 Members without a password set one on their first login with their email;
 first-access clears a password (and can set the email) to allow that again.
@@ -29,7 +29,7 @@ def main() -> None:
     reopen.add_argument("name")
     reopen.add_argument("--email")
     sub.add_parser("list", help="list members")
-    imp = sub.add_parser("import-feed", help="create published episodes from the podcast RSS feed")
+    imp = sub.add_parser("import-feed", help="create published episodes from the RSS feed or Spotify show")
     imp.add_argument("url")
     args = parser.parse_args()
 
@@ -45,7 +45,7 @@ def main() -> None:
             admin = db.scalar(select(Member).where(Member.is_admin.is_(True)).order_by(Member.id))
             if not admin:
                 raise SystemExit("needs an admin member to own the imported episodes")
-            episodes = feed.parse(feed.fetch(args.url))
+            episodes = feed.load(args.url)
             created, skipped = feed.import_episodes(db, episodes, admin)
             print(f"{len(episodes)} in feed: {created} created, {skipped} already there")
             return
