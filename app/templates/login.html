@@ -2,7 +2,7 @@
 {% block title %}Entrar · Então Ganhei{% endblock %}
 {% block content %}
 <section class="login card">
-  <img src="/static/icon.svg" alt="" width="64" height="64">
+  <img src="{{ logo_url() }}" alt="" width="64" height="64" class="logo">
   <h1>Então Ganhei</h1>
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <form method="post" action="/entrar" class="stack left">

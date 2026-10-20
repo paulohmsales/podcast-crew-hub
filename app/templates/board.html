@@ -21,6 +21,12 @@
         {% if t.segments %}
         <div class="chips">{% for s in t.segments %}<span class="chip seg">{{ s.name }}</span>{% endfor %}</div>
         {% endif %}
+        {% if t.games %}
+        <div class="game-thumbs" title="{{ t.games | map(attribute='name') | join(', ') }}">
+          {% for g in t.games[:5] %}{% if g.thumb %}<img src="{{ g.thumb }}" alt="{{ g.name }}" width="28" height="28">{% endif %}{% endfor %}
+          <span class="muted small names">{{ t.games | map(attribute='name') | join(', ') }}</span>
+        </div>
+        {% endif %}
         {% if t.participants %}
         <div class="people" title="{{ t.participants | map(attribute='name') | join(', ') }}">
           {% for m in t.participants[:6] %}<span class="avatar" aria-hidden="true">{{ m.name[:1] | upper }}</span>{% endfor %}
@@ -59,7 +65,6 @@
   {% if descartados %}<a href="/episodios?ver=painel">Esconder descartados</a>{% else %}<a href="/episodios?ver=painel&descartados=1">Mostrar descartados</a>{% endif %}
 </p>
 
-<div class="narrow">{% include "_new_episode.html" %}</div>
 {% endblock %}
 
 {% block scripts %}<script src="/static/board.js?v=1" defer></script>{% endblock %}

@@ -4,6 +4,8 @@ import tempfile
 # Point the app at a throwaway database before it is imported.
 _tmp = tempfile.mkdtemp()
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
+os.environ["DATA_DIR"] = f"{_tmp}/data"
+os.environ.pop("LUDOPEDIA_TOKEN", None)
 
 import pytest
 from fastapi.testclient import TestClient

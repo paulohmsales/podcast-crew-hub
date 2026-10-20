@@ -5,8 +5,10 @@ version: "3.8"
 services:
   web:
     image: entaoganhei:latest
+    env_file: /opt/entaoganhei/.env  # LUDOPEDIA_TOKEN
     environment:
       DATABASE_URL: sqlite:////data/entao-ganhei.db
+      DATA_DIR: /data
       BASE_URL: https://podcast.example.com
     volumes:
       - entaoganhei_data:/data

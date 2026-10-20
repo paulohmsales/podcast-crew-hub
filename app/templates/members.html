@@ -3,7 +3,10 @@
 {% block content %}
 <div class="page-head">
   <h1>Grupo</h1>
-  <a class="btn" href="/conta">Minha conta</a>
+  <div class="actions tight">
+    <a class="btn small" href="/aparencia">Logo</a>
+    <a class="btn small" href="/conta">Minha conta</a>
+  </div>
 </div>
 
 {% if notice %}<p class="card callout ok" role="status">{{ notice }}</p>{% endif %}

@@ -1,0 +1,9 @@
+{# expects g (Game) #}
+<span class="muted small">
+  {%- set bits = [] -%}
+  {%- if g.year %}{% set _ = bits.append(g.year | string) %}{% endif -%}
+  {%- if g.players %}{% set _ = bits.append(g.players ~ " jog.") %}{% endif -%}
+  {%- if g.minutes %}{% set _ = bits.append(g.minutes ~ " min") %}{% endif -%}
+  {%- if g.min_age %}{% set _ = bits.append(g.min_age ~ "+") %}{% endif -%}
+  {{ bits | join(" · ") }}
+</span>

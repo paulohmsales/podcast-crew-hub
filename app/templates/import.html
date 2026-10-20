@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Importar episódios · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/episodios">← Episódios</a></p>
+<section class="card">
+  <h1>Importar episódios publicados</h1>
+  <p class="muted">Cole o endereço do feed RSS do podcast. Cada episódio do feed vira um card em "Publicado", com título, número, data, link e descrição. Episódios que já existem (mesmo título ou já importados) são pulados, então dá para rodar de novo quando sair episódio novo.</p>
+  <p class="muted small">No Spotify for Creators, o feed fica em Configurações → Disponibilidade (algo como <code>https://anchor.fm/s/…/podcast/rss</code>).</p>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  {% if created is defined %}
+  <p class="card callout ok" role="status">Feed lido: {{ found }} episódio{{ 's' if found != 1 }}. Criados: <strong>{{ created }}</strong>. Já existiam: {{ skipped }}.
+    <a href="/episodios">Ver o painel →</a></p>
+  {% endif %}
+  <form method="post" action="/episodios/importar" class="stack">
+    <label>Feed RSS <input type="url" name="url" value="{{ url or '' }}" required placeholder="https://anchor.fm/s/…/podcast/rss"></label>
+    <button class="btn primary">Importar</button>
+  </form>
+</section>
+{% endblock %}

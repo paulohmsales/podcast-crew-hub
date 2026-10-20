@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ game.name }} · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/jogos">← Jogos</a></p>
+<article class="card">
+  <div class="game-head">
+    {% if game.thumb %}<img src="{{ game.thumb }}" alt="Capa de {{ game.name }}" width="120" height="120" class="cover">{% endif %}
+    <div>
+      <h1>{{ game.name }}</h1>
+      {% if game.original_name and game.original_name != game.name %}<p class="muted">{{ game.original_name }}</p>{% endif %}
+      {% set g = game %}{% include "_game_meta.html" %}
+      {% if game.link %}<p><a href="{{ game.link }}" target="_blank" rel="noopener">Ver na Ludopedia ↗</a></p>{% endif %}
+    </div>
+  </div>
+  {% if game.mechanic_list %}
+  <h2 class="small-h">Mecânicas</h2>
+  <div class="chips">{% for m in game.mechanic_list %}<span class="chip seg">{{ m }}</span>{% endfor %}</div>
+  {% endif %}
+  {% if game.category_list %}
+  <h2 class="small-h">Categorias</h2>
+  <div class="chips">{% for c in game.category_list %}<span class="chip seg">{{ c }}</span>{% endfor %}</div>
+  {% endif %}
+</article>
+
+<section class="card">
+  <h2>No podcast</h2>
+  {% if episodes %}
+  <ul class="plain theme-list">
+    {% for t in episodes %}
+    <li><a href="/episodios/{{ t.id }}">{% if t.number %}#{{ t.number }} {% endif %}{{ t.title }}</a>
+      <span class="pill status-{{ t.status }}">{{ STATUSES[t.status] }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Ainda não entrou em nenhum episódio.</p>
+  {% endif %}
+  {% if open_episodes %}
+  <form method="post" action="/jogos/{{ game.id }}/episodio" class="row add-to">
+    <label class="grow">Adicionar a um episódio
+      <select name="theme_id">{% for t in open_episodes %}<option value="{{ t.id }}">{{ t.title }} ({{ STATUSES[t.status] }})</option>{% endfor %}</select>
+    </label>
+    <button class="btn primary">Adicionar</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

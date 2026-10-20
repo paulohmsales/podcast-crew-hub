@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Member, Poll, PollResponse, Recording, Theme, ThemeVote
-from app.routes import account, agenda, members, segments, themes
+from app.routes import account, agenda, appearance, games, members, segments, themes
 from app.web import LoginRequired, current_member, render
 
 app = FastAPI(title="Então Ganhei", docs_url=None, redoc_url=None)
@@ -18,6 +18,8 @@ app.include_router(account.router)
 app.include_router(themes.router)
 app.include_router(themes.legacy)
 app.include_router(segments.router)
+app.include_router(games.router)
+app.include_router(appearance.router)
 app.include_router(agenda.router)
 app.include_router(members.router)
 

@@ -1,15 +1,17 @@
 """Episodes (stored as themes): the board, the list, and each episode's page."""
 
 from datetime import date, datetime
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import feed, ludopedia
 from app.db import get_db
-from app.models import THEME_STATUSES, Member, Recording, Segment, Theme, ThemeComment, ThemeVote
-from app.web import current_member, render
+from app.models import THEME_STATUSES, Game, Member, Recording, Segment, Theme, ThemeComment, ThemeVote
+from app.web import admin_member, current_member, render
 
 router = APIRouter(prefix="/episodios")
 legacy = APIRouter()
@@ -120,6 +122,28 @@ def episodes(
     )
 
 
+@router.get("/nova")
+def new_theme_page(request: Request, me: Member = Depends(current_member)):
+    return render(request, "episode_new.html", me)
+
+
+@router.get("/importar")
+def import_page(request: Request, me: Member = Depends(admin_member)):
+    return render(request, "import.html", me)
+
+
+@router.post("/importar")
+def import_feed(
+    request: Request, url: str = Form(...), me: Member = Depends(admin_member), db: Session = Depends(get_db)
+):
+    try:
+        episodes = feed.parse(feed.fetch(url.strip()))
+    except feed.FeedError as e:
+        return render(request, "import.html", me, url=url, error=str(e))
+    created, skipped = feed.import_episodes(db, episodes, me)
+    return render(request, "import.html", me, url=url, created=created, skipped=skipped, found=len(episodes))
+
+
 @router.post("")
 def create_theme(
     title: str = Form(...),
@@ -140,8 +164,21 @@ def create_theme(
 
 
 @router.get("/{theme_id}")
-def show_theme(theme_id: int, request: Request, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+def show_theme(
+    theme_id: int,
+    request: Request,
+    jogo: str = "",
+    erro: str = "",
+    me: Member = Depends(current_member),
+    db: Session = Depends(get_db),
+):
     theme = _theme_or_404(db, theme_id)
+    game_results, game_error = [], erro
+    if jogo.strip():
+        try:
+            game_results, _ = ludopedia.search(jogo)
+        except ludopedia.LudopediaError as e:
+            game_error = str(e)
     voters = sorted((v.member for v in theme.votes), key=lambda m: m.name)
     recordings = db.scalars(select(Recording).where(Recording.theme_id == theme.id).order_by(Recording.starts_at)).all()
     return render(
@@ -155,6 +192,11 @@ def show_theme(theme_id: int, request: Request, me: Member = Depends(current_mem
         recordings=recordings,
         members=db.scalars(select(Member).order_by(Member.name)).all(),
         all_segments=db.scalars(select(Segment).order_by(Segment.archived, Segment.position, Segment.name)).all(),
+        jogo=jogo,
+        game_results=game_results,
+        game_error=game_error,
+        attached={g.id for g in theme.games},
+        ludopedia_ready=ludopedia.configured(),
     )
 
 
@@ -187,6 +229,29 @@ def edit_theme(
     theme.participants = db.scalars(select(Member).where(Member.id.in_(member_ids))).all() if member_ids else []
     db.commit()
     return RedirectResponse(f"/episodios/{theme_id}", status_code=303)
+
+
+@router.post("/{theme_id}/jogos")
+def add_game(
+    theme_id: int, game_id: int = Form(...), _me: Member = Depends(current_member), db: Session = Depends(get_db)
+):
+    theme = _theme_or_404(db, theme_id)
+    try:
+        game = ludopedia.get_game(db, game_id)
+    except ludopedia.LudopediaError as e:
+        return RedirectResponse(f"/episodios/{theme_id}?erro={quote(str(e))}#jogos", status_code=303)
+    if game not in theme.games:
+        theme.games.append(game)
+        db.commit()
+    return RedirectResponse(f"/episodios/{theme_id}#jogos", status_code=303)
+
+
+@router.post("/{theme_id}/jogos/{game_id}/remover")
+def remove_game(theme_id: int, game_id: int, _me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    theme = _theme_or_404(db, theme_id)
+    theme.games = [g for g in theme.games if g.id != game_id]
+    db.commit()
+    return RedirectResponse(f"/episodios/{theme_id}#jogos", status_code=303)
 
 
 @router.post("/{theme_id}/voto")

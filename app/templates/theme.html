@@ -107,6 +107,57 @@
   </details>
 </article>
 
+<section class="card" id="jogos">
+  <h2>Jogos</h2>
+  {% if theme.games %}
+  <ul class="plain game-list">
+    {% for g in theme.games %}
+    <li class="game-item">
+      <a class="game-row" href="/jogos/{{ g.id }}">
+        {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
+        <span><strong>{{ g.name }}</strong><br>{% include "_game_meta.html" %}
+          {% if g.mechanic_list %}<br><span class="muted small">{{ g.mechanic_list[:4] | join(', ') }}</span>{% endif %}</span>
+      </a>
+      <form method="post" action="/episodios/{{ theme.id }}/jogos/{{ g.id }}/remover" class="inline">
+        <button class="link-btn" aria-label="Tirar {{ g.name }} do episódio">tirar</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nenhum jogo ainda.</p>
+  {% endif %}
+
+  {% if ludopedia_ready %}
+  <form method="get" action="/episodios/{{ theme.id }}#jogos" class="toolbar game-search" role="search">
+    <input type="search" name="jogo" value="{{ jogo }}" placeholder="Buscar jogo na Ludopedia…" aria-label="Buscar jogo para adicionar">
+    <button class="btn">Buscar</button>
+  </form>
+  {% else %}
+  <p class="muted small">Busca de jogos indisponível: a Ludopedia ainda não foi conectada.</p>
+  {% endif %}
+  {% if game_error %}<p class="error" role="alert">{{ game_error }}</p>{% endif %}
+  {% if jogo and game_results %}
+  <ul class="plain game-list results">
+    {% for g in game_results %}
+    <li class="game-item">
+      <span class="game-row">
+        {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="40" height="40" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
+        <span><strong>{{ g.name }}</strong>{% if g.original_name and g.original_name != g.name %}<span class="muted small"> · {{ g.original_name }}</span>{% endif %}</span>
+      </span>
+      {% if g.id in attached %}<span class="muted small">adicionado</span>{% else %}
+      <form method="post" action="/episodios/{{ theme.id }}/jogos" class="inline">
+        <input type="hidden" name="game_id" value="{{ g.id }}">
+        <button class="btn small primary">Adicionar</button>
+      </form>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif jogo and not game_error %}
+  <p class="muted">Nada encontrado para "{{ jogo }}".</p>
+  {% endif %}
+</section>
+
 <section class="card" id="comentarios">
   <h2>Conversa</h2>
   {% if theme.comments %}

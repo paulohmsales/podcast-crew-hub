@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Logo · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/membros">← Grupo</a></p>
+<h1>Logo</h1>
+{% if request.query_params.get('ok') %}<p class="card callout ok" role="status">Logo atualizado.</p>{% endif %}
+<section class="card">
+  <div class="logo-preview">
+    <img src="{{ logo_url() }}" alt="Logo atual" width="96" height="96" class="logo">
+    <div>
+      <p>Aparece no topo do app, na tela de login e na aba do navegador.</p>
+      <p class="muted small">PNG, JPG, WEBP ou GIF, até 2 MB. Imagens quadradas ficam melhores.</p>
+    </div>
+  </div>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="/aparencia/logo" enctype="multipart/form-data" class="stack">
+    <label>Nova imagem <input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" required></label>
+    <button class="btn primary">Enviar logo</button>
+  </form>
+  {% if custom %}
+  <form method="post" action="/aparencia/logo/padrao" class="footer-actions" onsubmit="return confirm('Voltar para o logo padrão?')">
+    <button class="link-btn">voltar para o logo padrão</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

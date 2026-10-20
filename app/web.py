@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app import auth, schedule
+from app import auth, branding, schedule
 from app.db import get_db
 from app.models import THEME_STATUSES, Member
 
@@ -31,7 +31,7 @@ def whatsapp_url(text: str, phone: str | None = None) -> str:
     return f"https://wa.me/{digits}?text={quote(text)}"
 
 
-templates.env.globals.update(whatsapp_url=whatsapp_url)
+templates.env.globals.update(whatsapp_url=whatsapp_url, logo_url=branding.logo_url)
 
 
 class LoginRequired(Exception):

@@ -324,3 +324,24 @@ label.check.pick:has(input:checked) { border-color: var(--brand); background: co
 .seg-order { display: flex; flex-direction: column; }
 .icon-btn { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.3rem; line-height: 1; }
 .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* --- games & logo ------------------------------------------------------------ */
+img.logo { object-fit: cover; border-radius: 22%; }
+.logo-preview { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.logo-preview p { margin: 0 0 0.25rem; }
+.game-list > li { padding: 0.45rem 0; border-bottom: 1px solid var(--line); }
+.game-list > li:last-child { border-bottom: 0; }
+.game-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.game-row { display: flex; gap: 0.75rem; align-items: center; color: inherit; text-decoration: none; min-width: 0; }
+a.game-row:hover strong { text-decoration: underline; }
+.game-row img, .thumb-ph { flex: none; width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: var(--surface-2); }
+.results .game-row img, .results .thumb-ph { width: 40px; height: 40px; }
+.game-search { margin: 0.75rem 0 0.25rem; }
+.game-head { display: flex; gap: 1rem; align-items: flex-start; }
+.game-head .cover { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; flex: none; }
+.small-h { font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0.35rem; }
+.game-thumbs { display: flex; align-items: center; gap: 0.2rem; min-width: 0; }
+.game-thumbs img { width: 28px; height: 28px; object-fit: cover; border-radius: 5px; flex: none; }
+.game-thumbs .names { margin-left: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pager { margin-top: 0.75rem; }
+.add-to { margin-top: 0.75rem; }

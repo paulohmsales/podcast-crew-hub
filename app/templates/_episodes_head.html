@@ -3,7 +3,8 @@
   <h1>Episódios</h1>
   <div class="actions tight">
     <a class="btn small" href="/quadros">Quadros</a>
-    <a class="btn small primary" href="#novo">+ Nova ideia</a>
+    {% if me.is_admin %}<a class="btn small" href="/episodios/importar">Importar</a>{% endif %}
+    <a class="btn small primary" href="/episodios/nova">+ Nova ideia</a>
   </div>
 </div>
 <form class="toolbar" method="get" action="/episodios">

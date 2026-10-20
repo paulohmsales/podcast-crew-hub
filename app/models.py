@@ -56,6 +56,49 @@ theme_participants = Table(
 )
 
 
+class Game(Base):
+    """A board game from Ludopedia, cached locally (id is Ludopedia's id_jogo)."""
+
+    __tablename__ = "games"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    name: Mapped[str] = mapped_column(String(200))
+    original_name: Mapped[str] = mapped_column(String(200), default="")
+    thumb: Mapped[str] = mapped_column(String(500), default="")
+    link: Mapped[str] = mapped_column(String(500), default="")
+    year: Mapped[int | None] = mapped_column(Integer)
+    players_min: Mapped[int | None] = mapped_column(Integer)
+    players_max: Mapped[int | None] = mapped_column(Integer)
+    minutes: Mapped[int | None] = mapped_column(Integer)
+    min_age: Mapped[int | None] = mapped_column(Integer)
+    mechanics: Mapped[str] = mapped_column(Text, default="")  # names joined by "|"
+    categories: Mapped[str] = mapped_column(Text, default="")
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime)  # full details loaded at
+
+    @property
+    def mechanic_list(self) -> list[str]:
+        return [m for m in self.mechanics.split("|") if m]
+
+    @property
+    def category_list(self) -> list[str]:
+        return [c for c in self.categories.split("|") if c]
+
+    @property
+    def players(self) -> str:
+        lo, hi = self.players_min, self.players_max
+        if not lo and not hi:
+            return ""
+        return f"{lo}" if lo == hi or not hi else f"{lo or 1}–{hi}"
+
+
+theme_games = Table(
+    "theme_games",
+    Base.metadata,
+    Column("theme_id", ForeignKey("themes.id", ondelete="CASCADE"), primary_key=True),
+    Column("game_id", ForeignKey("games.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class Theme(Base):
     """An episode, from first idea to published (shown as "Episódio" in the UI)."""
 
@@ -69,6 +112,7 @@ class Theme(Base):
     number: Mapped[int | None] = mapped_column(Integer)  # episode number once it has one
     episode_url: Mapped[str] = mapped_column(String(500), default="", server_default="")
     published_on: Mapped[date | None] = mapped_column(Date)
+    feed_guid: Mapped[str | None] = mapped_column(String(300), unique=True)  # set when imported from RSS
     created_by_id: Mapped[int] = mapped_column(ForeignKey("members.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -78,6 +122,7 @@ class Theme(Base):
     created_by: Mapped[Member] = relationship()
     segments: Mapped[list[Segment]] = relationship(secondary=theme_segments, order_by=Segment.position)
     participants: Mapped[list[Member]] = relationship(secondary=theme_participants, order_by=Member.name)
+    games: Mapped[list[Game]] = relationship(secondary=theme_games, order_by=Game.name, backref="episodes")
     votes: Mapped[list["ThemeVote"]] = relationship(cascade="all, delete-orphan")
     comments: Mapped[list["ThemeComment"]] = relationship(
         cascade="all, delete-orphan", order_by="ThemeComment.created_at"

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Jogos · Então Ganhei{% endblock %}
+{% block content %}
+<h1>Jogos</h1>
+{% if not ready %}{% include "_ludopedia_setup.html" %}{% endif %}
+
+<form class="toolbar" method="get" action="/jogos" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar jogo na Ludopedia…" aria-label="Buscar jogo" {{ 'autofocus' if not q }}>
+  <button class="btn primary">Buscar</button>
+</form>
+
+{% if error %}<p class="card callout error" role="alert">{{ error }}</p>{% endif %}
+
+{% if q %}
+<section class="card">
+  <div class="card-head">
+    <h2>Resultados para "{{ q }}"</h2>
+    <span class="muted small">{{ total }} jogo{{ 's' if total != 1 }}</span>
+  </div>
+  {% if results %}
+  <ul class="plain game-list">
+    {% for g in results %}
+    <li>
+      <a class="game-row" href="/jogos/{{ g.id }}">
+        {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
+        <span>
+          <strong>{{ g.name }}</strong>
+          {% if g.original_name and g.original_name != g.name %}<span class="muted small"> · {{ g.original_name }}</span>{% endif %}
+          {% if g.id in covered_ids %}<span class="pill ok">já falamos</span>{% endif %}
+        </span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="row pager">
+    {% if page > 1 %}<a class="btn small" href="?q={{ q | urlencode }}&page={{ page - 1 }}">← Anteriores</a>{% endif %}
+    {% if page * 20 < total %}<a class="btn small" href="?q={{ q | urlencode }}&page={{ page + 1 }}">Mais →</a>{% endif %}
+  </div>
+  {% elif not error %}
+  <p class="muted">Nada encontrado.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Jogos que já passaram pelo podcast</h2>
+  {% if covered %}
+  <ul class="plain game-list">
+    {% for g in covered %}
+    <li>
+      <a class="game-row" href="/jogos/{{ g.id }}">
+        {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
+        <span><strong>{{ g.name }}</strong><br>{% include "_game_meta.html" %}
+          <span class="muted small"> · {{ g.episodes | length }} episódio{{ 's' if g.episodes | length != 1 }}</span></span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nenhum ainda. Adicione jogos na página de cada episódio.</p>
+  {% endif %}
+</section>
+{% endblock %}

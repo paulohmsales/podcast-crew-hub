@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Nova ideia · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/episodios">← Episódios</a></p>
+<section class="card">
+  <h1>Nova ideia de episódio</h1>
+  <p class="muted">Entra na coluna "Ideia" do painel, já com o seu voto.</p>
+  <form method="post" action="/episodios" class="stack">
+    <label>Título
+      <input name="title" required maxlength="200" placeholder="Ex.: Jogos com traição escondida" autofocus>
+    </label>
+    <label>Ideia / pauta
+      <textarea name="description" rows="5" placeholder="Por que vale um episódio? Que jogos e assuntos entram?"></textarea>
+    </label>
+    <label>Links <span class="muted">(um por linha)</span>
+      <textarea name="links" rows="2" placeholder="https://ludopedia.com.br/jogo/..."></textarea>
+    </label>
+    <p class="muted small">Os jogos você adiciona depois, na página do episódio, buscando na Ludopedia.</p>
+    <button class="btn primary" type="submit">Adicionar ao painel</button>
+  </form>
+</section>
+{% endblock %}
