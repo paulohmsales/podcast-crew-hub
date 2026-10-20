@@ -27,15 +27,21 @@
   {% if results %}
   <ul class="plain game-list">
     {% for g in results %}
+    {% set eps = in_episodes.get(g.id, []) %}
     <li>
       <a class="game-row" href="/jogos/{{ g.id }}">
         {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
         <span>
           <strong>{{ g.name }}</strong>
           {% if g.original_name and g.original_name != g.name %}<span class="muted small"> · {{ g.original_name }}</span>{% endif %}
-          {% if g.id in covered_ids %}<span class="pill ok">já falamos</span>{% endif %}
         </span>
       </a>
+      {% if eps %}
+      <p class="in-episodes small">
+        <span class="pill ok">em {{ eps | length }} episódio{{ 's' if eps | length != 1 }}</span>
+        {% for t in eps %}<a href="/episodios/{{ t.id }}">{% if t.number %}#{{ t.number }} {% endif %}{{ t.title }}</a>{% if t.status != 'publicado' %} <span class="muted">({{ STATUSES[t.status] | lower }})</span>{% endif %}{{ " · " if not loop.last }}{% endfor %}
+      </p>
+      {% endif %}
     </li>
     {% endfor %}
   </ul>

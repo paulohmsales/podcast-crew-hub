@@ -345,3 +345,5 @@ a.game-row:hover strong { text-decoration: underline; }
 .game-thumbs .names { margin-left: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pager { margin-top: 0.75rem; }
 .add-to { margin-top: 0.75rem; }
+.in-episodes { margin: 0.3rem 0 0 calc(48px + 0.75rem); line-height: 1.6; }
+.toolbar select { max-width: 100%; min-width: 0; }

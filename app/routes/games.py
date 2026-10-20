@@ -1,5 +1,7 @@
 """Jogos: search Ludopedia and see which games the podcast already covered."""
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -34,7 +36,13 @@ def games(
     elif q.strip() or mechanic:
         error = "A integração com a Ludopedia ainda não foi configurada (LUDOPEDIA_TOKEN)."
     covered = db.scalars(select(Game).where(Game.id.in_(select(theme_games.c.game_id))).order_by(Game.name)).all()
-    covered_ids = {g.id for g in covered}
+    # For each result already tagged on our episodes: those episodes, newest first.
+    in_episodes: dict[int, list[Theme]] = {}
+    for game in covered:
+        if any(r["id"] == game.id for r in results):
+            in_episodes[game.id] = sorted(
+                game.episodes, key=lambda t: (t.published_on or date.max, t.number or 0), reverse=True
+            )
     return render(
         request,
         "games.html",
@@ -48,7 +56,7 @@ def games(
         total=total,
         error=error,
         covered=covered,
-        covered_ids=covered_ids,
+        in_episodes=in_episodes,
         ready=ludopedia.configured(),
     )
 

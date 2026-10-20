@@ -88,7 +88,8 @@ def test_add_game_to_episode(client, db, fake_ludopedia):
     assert game.players == "2–5" and game.mechanic_list == ["Controle de Área"]
     assert game.link == "https://ludopedia.com.br/jogo/terra-mystica"  # API's missing slashes fixed
     assert [g.id for g in db.get(Theme, t).games] == [404]
-    assert "já falamos" in client.get("/jogos?q=terra").text
+    page = client.get("/jogos?q=terra").text
+    assert "em 1 episódio" in page and f'href="/episodios/{t}"' in page and "(ideia)" in page
     assert "Euros" in client.get("/jogos/404").text
     n = len(fake_ludopedia)
     client.get("/jogos?q=terra")
