@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Então Ganhei{% endblock %}</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css?v=1">
+</head>
+<body>
+  {% if me %}
+  <header class="topbar">
+    <a class="brand" href="/"><img src="/static/icon.svg" alt="" width="28" height="28"> Então Ganhei</a>
+    <nav>
+      {% set path = request.url.path %}
+      <a href="/temas" class="{{ 'active' if path.startswith('/temas') }}">Temas</a>
+      <a href="/agenda" class="{{ 'active' if path.startswith('/agenda') }}">Agenda</a>
+      <a href="/membros" class="{{ 'active' if path.startswith('/membros') }}">Grupo</a>
+    </nav>
+  </header>
+  {% endif %}
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

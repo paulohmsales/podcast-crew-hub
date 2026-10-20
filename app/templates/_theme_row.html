@@ -1,0 +1,18 @@
+{# expects: theme, votes, my_votes; optional comment_count #}
+<li class="theme-row">
+  <form method="post" action="/temas/{{ theme.id }}/voto" class="vote">
+    <button type="submit" class="vote-btn {{ 'on' if theme.id in my_votes }}"
+            aria-pressed="{{ 'true' if theme.id in my_votes else 'false' }}"
+            title="{{ 'Tirar meu voto' if theme.id in my_votes else 'Quero gravar esse' }}">
+      <span class="arrow">▲</span><span class="count">{{ votes }}</span>
+    </button>
+  </form>
+  <a class="theme-main" href="/temas/{{ theme.id }}">
+    <span class="theme-title">{{ theme.title }}</span>
+    <span class="meta">
+      <span class="pill status-{{ theme.status }}">{{ STATUSES[theme.status] }}</span>
+      por {{ theme.created_by.name }}
+      {% if comment_count %} · 💬 {{ comment_count }}{% endif %}
+    </span>
+  </a>
+</li>

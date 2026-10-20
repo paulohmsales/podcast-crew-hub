@@ -1,0 +1,22 @@
+{# expects: r (Recording) #}
+{% set share = "🎙️ Gravação marcada: " ~ fmt_slot(r.starts_at) ~ (" — " ~ r.theme.title if r.theme else "") ~ "\nAdicionar à agenda: " ~ BASE_URL ~ "/agenda/gravacoes/" ~ r.id ~ ".ics" %}
+<li class="recording">
+  <div>
+    <span class="when">{{ fmt_slot(r.starts_at) }}</span>
+    <span class="muted small">{{ r.duration_minutes }} min</span>
+  </div>
+  <div>
+    {% if r.theme %}<a href="/temas/{{ r.theme.id }}">{{ r.theme.title }}</a>
+      <span class="pill status-{{ r.theme.status }}">{{ STATUSES[r.theme.status] }}</span>
+    {% else %}<em class="muted">tema a definir</em>{% endif %}
+    {% if r.notes %}<div class="muted small">{{ r.notes }}</div>{% endif %}
+  </div>
+  <div class="actions">
+    <a class="btn small" href="/agenda/gravacoes/{{ r.id }}.ics">📆 Calendário</a>
+    <a class="btn small whatsapp" href="{{ whatsapp_url(share) }}" target="_blank" rel="noopener">WhatsApp</a>
+    {% if r.theme and r.theme.status in ('ideia', 'pauta', 'agendado') %}
+    <form method="post" action="/agenda/gravacoes/{{ r.id }}/gravado" class="inline"><button class="btn small">✓ Gravado</button></form>
+    {% endif %}
+    <form method="post" action="/agenda/gravacoes/{{ r.id }}/excluir" class="inline" onsubmit="return confirm('Desmarcar essa gravação?')"><button class="link-btn">desmarcar</button></form>
+  </div>
+</li>

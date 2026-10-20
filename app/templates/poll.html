@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.title }} · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/agenda">← Agenda</a></p>
+
+<div class="page-head">
+  <div>
+    <h1>{{ poll.title }}</h1>
+    <p class="meta">
+      {% if poll.theme %}Tema: <a href="/temas/{{ poll.theme.id }}">{{ poll.theme.title }}</a> · {% endif %}
+      {{ fmt_day(poll.start_date) }} a {{ fmt_day(poll.end_date) }}, {{ fmt_minutes(poll.day_start) }}–{{ fmt_minutes(poll.day_end) }}
+      {% if poll.closed %}<span class="pill">fechada</span>{% endif %}
+    </p>
+  </div>
+</div>
+
+{% for r in recordings %}
+<section class="card callout ok">
+  <h2>🎙️ Marcado</h2>
+  <ul class="plain recordings">{% include "_recording.html" %}</ul>
+</section>
+{% endfor %}
+
+<section class="card">
+  <div class="who">
+    <span class="muted small">Responderam {{ responded | length }}/{{ members | length }}:</span>
+    {% for m in members %}
+    <span class="chip {{ 'done' if m.id in responded else 'todo' }}">{{ '✓' if m.id in responded else '…' }} {{ m.name }}</span>
+    {% endfor %}
+  </div>
+  <div class="actions">
+    <a class="btn small whatsapp" href="{{ whatsapp_url(invite_text) }}" target="_blank" rel="noopener">Mandar no grupo</a>
+    {% if pending and not poll.closed %}
+    <a class="btn small whatsapp" href="{{ whatsapp_url(reminder_text) }}" target="_blank" rel="noopener">Cobrar quem falta</a>
+    {% endif %}
+  </div>
+</section>
+
+{% if not poll.closed %}
+<section class="card">
+  <div class="mode-switch" role="tablist">
+    <button type="button" role="tab" data-mode="me" aria-selected="true">Meus horários</button>
+    <button type="button" role="tab" data-mode="group" aria-selected="false">Ver o grupo</button>
+  </div>
+  <p class="hint" data-hint="me">Toque ou arraste nos horários em que <strong>você pode gravar</strong>. Salva sozinho.</p>
+  <p class="hint" data-hint="group" hidden>Quanto mais escuro, mais gente pode. Toque num horário para ver quem.</p>
+{% else %}
+<section class="card">
+  <h2>Disponibilidade do grupo</h2>
+{% endif %}
+
+  <div class="grid-wrap">
+    <table class="slot-grid" id="grid" data-mode="{{ 'group' if poll.closed else 'me' }}"
+           data-save-url="/agenda/{{ poll.id }}/disponibilidade" data-total="{{ members | length }}" data-me="{{ me.name }}">
+      <thead>
+        <tr>
+          <th></th>
+          {% for d in days %}<th scope="col">{{ fmt_day(d).split(' ')[0] }}<br><span>{{ fmt_day(d).split(' ')[1] }}</span></th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in times %}
+        <tr class="{{ 'hour' if t % 60 == 0 }}">
+          <th scope="row">{{ fmt_minutes(t) if t % 60 == 0 or poll.slot_minutes >= 60 else '' }}</th>
+          {% for d in days %}
+          {% set key = slot_at(d, t).isoformat(timespec='minutes') %}
+          {% set who = cells.get(key, []) %}
+          <td data-slot="{{ key }}" data-n="{{ who | length }}" data-who="{{ who | join(', ') }}"
+              class="{{ 'mine' if key in mine }}"
+              style="--heat: {{ (who | length) / ((members | length) or 1) }}"
+              aria-label="{{ fmt_day(d) }} {{ fmt_minutes(t) }}: {{ who | length }} pessoas"></td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="who-at" id="who-at" aria-live="polite"></p>
+  {% if not poll.closed %}
+  <div class="row save-row">
+    <span id="save-status" class="muted small" aria-live="polite">{{ 'Seus horários estão salvos.' if me.id in responded else 'Você ainda não respondeu.' }}</span>
+    <button type="button" class="btn small" id="none-btn">Não posso em nenhum</button>
+  </div>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Melhores horários</h2>
+  {% if windows %}
+  <ol class="windows">
+    {% for w in windows %}
+    <li>
+      <div>
+        <strong>{{ w.label }}</strong>
+        <span class="pill {{ 'ok' if w.members | length == members | length else '' }}">{{ w.members | length }}/{{ members | length }}</span>
+        <div class="muted small">{{ w.members | map(attribute='name') | join(', ') }}
+          {% set missing = members | rejectattr('id', 'in', w.members | map(attribute='id') | list) | map(attribute='name') | list %}
+          {% if missing %} · sem: {{ missing | join(', ') }}{% endif %}
+        </div>
+      </div>
+      {% if not poll.closed %}
+      <form method="post" action="/agenda/{{ poll.id }}/marcar" class="inline book">
+        <input type="hidden" name="starts_at" value="{{ w.start.isoformat(timespec='minutes') }}">
+        <input type="hidden" name="duration_minutes" value="{{ [w.minutes, 120] | min }}">
+        <button class="btn small primary">Marcar</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="muted">Ainda não tem um horário de pelo menos 1 hora em que alguém possa. Assim que o pessoal marcar, aparece aqui.</p>
+  {% endif %}
+
+  {% if not poll.closed %}
+  <details>
+    <summary class="btn small">Marcar outro horário</summary>
+    <form method="post" action="/agenda/{{ poll.id }}/marcar" class="stack">
+      <div class="row">
+        <label>Quando <input type="datetime-local" name="starts_at" required step="900"
+               min="{{ poll.start_date.isoformat() }}T00:00" max="{{ poll.end_date.isoformat() }}T23:59"></label>
+        <label>Duração (min) <input type="number" name="duration_minutes" value="90" min="15" max="600" step="15"></label>
+      </div>
+      <label>Tema
+        <select name="theme_id">
+          <option value="">{{ poll.theme.title if poll.theme else '— a definir —' }}</option>
+          {% for t in themes if not poll.theme or t.id != poll.theme.id %}<option value="{{ t.id }}">{{ t.title }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn primary">Marcar gravação</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+<section class="actions footer-actions">
+  {% if poll.closed %}
+  <form method="post" action="/agenda/{{ poll.id }}/reabrir" class="inline"><button class="btn small">Reabrir rodada</button></form>
+  {% else %}
+  <form method="post" action="/agenda/{{ poll.id }}/fechar" class="inline"><button class="btn small">Fechar sem marcar</button></form>
+  {% endif %}
+  {% if me.is_admin or poll.created_by_id == me.id %}
+  <form method="post" action="/agenda/{{ poll.id }}/excluir" class="inline" onsubmit="return confirm('Excluir essa rodada e as respostas?')"><button class="link-btn danger">excluir rodada</button></form>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/grid.js?v=1" defer></script>{% endblock %}

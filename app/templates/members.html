@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Grupo · Então Ganhei{% endblock %}
+{% block content %}
+<h1>Grupo</h1>
+
+<section class="card">
+  <ul class="plain members">
+    {% for m in members %}
+    <li id="m{{ m.id }}">
+      <div class="member-head">
+        <strong>{{ m.name }}</strong>
+        {% if m.is_admin %}<span class="pill">admin</span>{% endif %}
+        {% if m.id == me.id %}<span class="pill ok">você</span>{% endif %}
+        {% if m.phone %}<span class="muted small">{{ m.phone }}</span>{% endif %}
+      </div>
+      {% if me.is_admin %}
+      {% set invite = "Oi " ~ m.name ~ "! Esse é seu link do app do Então Ganhei (temas e agenda). Não compartilhe, ele é só seu: " ~ login_url(m) %}
+      <div class="actions">
+        <a class="btn small whatsapp" href="{{ whatsapp_url(invite, m.phone) }}" target="_blank" rel="noopener">Mandar link no WhatsApp</a>
+        <button type="button" class="btn small" data-copy="{{ login_url(m) }}">Copiar link</button>
+        <form method="post" action="/membros/{{ m.id }}/novo-link" class="inline"
+              onsubmit="return confirm('Gerar um novo link? O link atual de {{ m.name }} para de funcionar.')">
+          <button class="link-btn">novo link</button>
+        </form>
+      </div>
+      {% endif %}
+      {% if me.is_admin or m.id == me.id %}
+      <details>
+        <summary class="link-btn">editar</summary>
+        <form method="post" action="/membros/{{ m.id }}/editar" class="row">
+          <label>Nome <input name="name" value="{{ m.name }}" required maxlength="80"></label>
+          <label>WhatsApp <input name="phone" value="{{ m.phone or '' }}" placeholder="+55 11 91234-5678"></label>
+          <button class="btn small primary">Salvar</button>
+        </form>
+      </details>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% if me.is_admin %}
+<section class="card">
+  <h2>Adicionar pessoa</h2>
+  <form method="post" action="/membros" class="stack">
+    <div class="row">
+      <label>Nome <input name="name" required maxlength="80"></label>
+      <label>WhatsApp <span class="muted">(opcional)</span> <input name="phone" placeholder="+55 11 91234-5678"></label>
+    </div>
+    <label class="check"><input type="checkbox" name="is_admin" value="true"> Admin (pode adicionar gente e gerar links)</label>
+    <button class="btn primary">Adicionar</button>
+  </form>
+</section>
+{% endif %}
+
+<form method="post" action="/sair" class="footer-actions"><button class="link-btn">sair deste aparelho</button></form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll("[data-copy]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(b.dataset.copy);
+      const label = b.textContent;
+      b.textContent = "Copiado ✓";
+      setTimeout(() => (b.textContent = label), 1500);
+    })
+  );
+</script>
+{% endblock %}

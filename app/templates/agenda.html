@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Agenda · Então Ganhei{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Agenda</h1>
+  <a class="btn primary" href="/agenda/nova">+ Nova rodada de horários</a>
+</div>
+
+{% if open_polls %}
+<section class="card">
+  <h2>Marcando horário</h2>
+  <ul class="plain polls">
+    {% for poll in open_polls %}
+    <li>
+      <a href="/agenda/{{ poll.id }}"><strong>{{ poll.title }}</strong></a>
+      <span class="muted small">{{ fmt_day(poll.start_date) }} a {{ fmt_day(poll.end_date) }} · {{ poll.responses | length }} responderam</span>
+      {% if poll.id not in answered %}<span class="pill warn">falta você</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Próximas gravações</h2>
+  {% if upcoming %}
+  <ul class="plain recordings">
+    {% for r in upcoming %}{% include "_recording.html" %}{% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nada marcado.</p>
+  {% endif %}
+  <details>
+    <summary class="btn">Marcar direto, sem rodada</summary>
+    <form method="post" action="/agenda/gravacoes" class="stack">
+      <div class="row">
+        <label>Quando <input type="datetime-local" name="starts_at" required step="900"></label>
+        <label>Duração (min) <input type="number" name="duration_minutes" value="90" min="15" max="600" step="15"></label>
+      </div>
+      <label>Tema
+        <select name="theme_id">
+          <option value="">— a definir —</option>
+          {% for t in themes %}<option value="{{ t.id }}">{{ t.title }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Notas <input name="notes" placeholder="Ex.: convidado, link do Discord…"></label>
+      <button class="btn primary">Marcar</button>
+    </form>
+  </details>
+</section>
+
+{% if past %}
+<section class="card">
+  <h2>Já aconteceram</h2>
+  <ul class="plain recordings past">
+    {% for r in past %}{% include "_recording.html" %}{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if closed_polls %}
+<section class="card">
+  <h2>Rodadas fechadas</h2>
+  <ul class="plain polls">
+    {% for poll in closed_polls %}
+    <li><a href="/agenda/{{ poll.id }}">{{ poll.title }}</a> <span class="muted small">{{ fmt_day(poll.start_date) }} a {{ fmt_day(poll.end_date) }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

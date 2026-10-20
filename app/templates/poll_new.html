@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Nova rodada · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/agenda">← Agenda</a></p>
+<section class="card">
+  <h1>Nova rodada de horários</h1>
+  <p class="muted">Escolha os dias e a faixa de horário. Cada pessoa marca quando pode, e o app mostra os melhores horários.</p>
+  <form method="post" action="/agenda" class="stack">
+    <label>Tema <span class="muted">(opcional)</span>
+      <select name="theme_id">
+        <option value="">— a definir —</option>
+        {% for t in themes %}<option value="{{ t.id }}" {{ 'selected' if t.id == theme_id }}>{{ t.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Nome da rodada <span class="muted">(opcional)</span>
+      <input name="title" maxlength="200" placeholder="Ex.: Gravação da semana">
+    </label>
+    <div class="row">
+      <label>De <input type="date" name="start_date" value="{{ start.isoformat() }}" required></label>
+      <label>Até <input type="date" name="end_date" value="{{ end.isoformat() }}" required></label>
+    </div>
+    <div class="row">
+      <label>Das <input type="time" name="day_start" value="19:00" step="900" required></label>
+      <label>Às <input type="time" name="day_end" value="23:00" step="900"></label>
+      <label>Intervalo
+        <select name="slot_minutes">
+          <option value="30" selected>30 min</option>
+          <option value="60">1 hora</option>
+          <option value="15">15 min</option>
+        </select>
+      </label>
+    </div>
+    <p class="muted small">Até {{ 21 }} dias. Para ir até meia-noite, deixe "Às" como 00:00.</p>
+    <button class="btn primary">Criar e marcar meus horários</button>
+  </form>
+</section>
+{% endblock %}

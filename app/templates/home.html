@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="hello">Oi, {{ me.name }} 👋</h1>
+
+{% set pending_polls = open_polls | rejectattr("id", "in", answered) | list %}
+{% if pending_polls %}
+<section class="card callout">
+  <h2>Falta você marcar</h2>
+  <ul class="plain">
+    {% for poll in pending_polls %}
+    <li><a class="btn primary" href="/agenda/{{ poll.id }}">📅 {{ poll.title }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-head">
+    <h2>Próximas gravações</h2>
+    <a href="/agenda">Agenda →</a>
+  </div>
+  {% if upcoming %}
+  <ul class="plain recordings">
+    {% for r in upcoming %}
+    <li>
+      <span class="when">{{ fmt_slot(r.starts_at) }}</span>
+      <span>{% if r.theme %}<a href="/temas/{{ r.theme.id }}">{{ r.theme.title }}</a>{% else %}<em>tema a definir</em>{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nada marcado ainda.</p>
+  {% endif %}
+  {% if open_polls %}
+  <p class="muted small">Agendas abertas:
+    {% for poll in open_polls %}<a href="/agenda/{{ poll.id }}">{{ poll.title }}</a> ({{ poll.responses | length }}/{{ member_count }}){{ ", " if not loop.last }}{% endfor %}
+  </p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Temas mais votados</h2>
+    <a href="/temas">Todos →</a>
+  </div>
+  {% if top_themes %}
+  <ul class="plain theme-list">
+    {% for theme, votes in top_themes %}{% include "_theme_row.html" %}{% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nenhum tema ainda. <a href="/temas#novo">Sugira o primeiro</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

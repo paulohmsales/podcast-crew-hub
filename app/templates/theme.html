@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ theme.title }} · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/temas">← Temas</a></p>
+
+<article class="card">
+  <div class="theme-head">
+    <form method="post" action="/temas/{{ theme.id }}/voto" class="vote">
+      <button type="submit" class="vote-btn big {{ 'on' if voted }}" aria-pressed="{{ 'true' if voted else 'false' }}">
+        <span class="arrow">▲</span><span class="count">{{ voters | length }}</span>
+      </button>
+    </form>
+    <div>
+      <h1>{{ theme.title }}</h1>
+      <p class="meta">
+        <span class="pill status-{{ theme.status }}">{{ STATUSES[theme.status] }}</span>
+        sugerido por {{ theme.created_by.name }} em {{ fmt_day(theme.created_at.date()) }}
+      </p>
+    </div>
+  </div>
+
+  {% if theme.description %}<div class="prose">{{ theme.description }}</div>{% endif %}
+
+  {% if theme.link_list %}
+  <ul class="links">
+    {% for link in theme.link_list %}
+    <li>{% if link.startswith('http') %}<a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a>{% else %}{{ link }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <p class="muted small">
+    {% if voters %}Querem gravar: {{ voters | map(attribute='name') | join(', ') }}{% else %}Ninguém votou ainda.{% endif %}
+  </p>
+
+  <div class="actions">
+    <form method="post" action="/temas/{{ theme.id }}/status" class="inline">
+      <label class="sr-only" for="status">Status</label>
+      <select id="status" name="status" onchange="this.form.submit()">
+        {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if theme.status == key }}>{{ label }}</option>{% endfor %}
+      </select>
+      <noscript><button class="btn">Mudar</button></noscript>
+    </form>
+    {% if theme.status in ('ideia', 'pauta', 'agendado') %}
+    <a class="btn" href="/agenda/nova?tema={{ theme.id }}">📅 Marcar gravação</a>
+    {% endif %}
+    <details class="edit">
+      <summary class="btn">Editar</summary>
+      <form method="post" action="/temas/{{ theme.id }}/editar" class="stack">
+        <label>Título <input name="title" value="{{ theme.title }}" required maxlength="200"></label>
+        <label>Ideia / pauta <textarea name="description" rows="5">{{ theme.description }}</textarea></label>
+        <label>Links <textarea name="links" rows="3">{{ theme.links }}</textarea></label>
+        <div class="row">
+          <button class="btn primary">Salvar</button>
+        </div>
+      </form>
+      {% if can_delete %}
+      <form method="post" action="/temas/{{ theme.id }}/excluir" onsubmit="return confirm('Excluir esse tema?')">
+        <button class="btn danger">Excluir tema</button>
+      </form>
+      {% endif %}
+    </details>
+  </div>
+</article>
+
+<section class="card" id="comentarios">
+  <h2>Conversa</h2>
+  {% if theme.comments %}
+  <ul class="plain comments">
+    {% for c in theme.comments %}
+    <li>
+      <div class="comment-head">
+        <strong>{{ c.member.name }}</strong>
+        <span class="muted small">{{ fmt_day(c.created_at.date()) }} {{ c.created_at.strftime('%H:%M') }}</span>
+        {% if c.member_id == me.id or me.is_admin %}
+        <form method="post" action="/temas/{{ theme.id }}/comentarios/{{ c.id }}/excluir" class="inline" onsubmit="return confirm('Apagar comentário?')">
+          <button class="link-btn" title="Apagar">apagar</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="prose">{{ c.body }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Sem comentários ainda.</p>
+  {% endif %}
+  <form method="post" action="/temas/{{ theme.id }}/comentarios" class="stack">
+    <label class="sr-only" for="body">Comentário</label>
+    <textarea id="body" name="body" rows="3" required placeholder="Jogos que entram, ângulo do episódio, convidados…"></textarea>
+    <button class="btn primary">Comentar</button>
+  </form>
+</section>
+{% endblock %}

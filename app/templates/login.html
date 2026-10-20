@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="login card">
+  <img src="/static/icon.svg" alt="" width="64" height="64">
+  <h1>Então Ganhei</h1>
+  {% if invalid %}
+  <p class="error">Esse link não vale mais. Peça um novo para quem administra o grupo.</p>
+  {% else %}
+  <p>Para entrar, abra o seu link pessoal. Quem administra o grupo manda ele no WhatsApp.</p>
+  {% endif %}
+</section>
+{% endblock %}

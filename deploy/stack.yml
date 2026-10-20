@@ -1,0 +1,35 @@
+# Então Ganhei on the VPS's Docker Swarm, behind Traefik (Let's Encrypt).
+#   https://podcast.example.com
+# Deployed by deploy/deploy.sh (image built on the VPS).
+version: "3.8"
+services:
+  web:
+    image: entaoganhei:latest
+    environment:
+      DATABASE_URL: sqlite:////data/entao-ganhei.db
+      BASE_URL: https://podcast.example.com
+    volumes:
+      - entaoganhei_data:/data
+    networks: [network_swarm_public]
+    deploy:
+      replicas: 1
+      # stop-first: never two writers on the SQLite file during an update
+      update_config: { order: stop-first, failure_action: rollback }
+      restart_policy: { condition: on-failure }
+      resources:
+        limits: { memory: 256M }
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=network_swarm_public
+        - traefik.http.routers.entaoganhei.rule=Host(`podcast.example.com`)
+        - traefik.http.routers.entaoganhei.entrypoints=websecure
+        - traefik.http.routers.entaoganhei.tls.certresolver=letsencryptresolver
+        - traefik.http.services.entaoganhei.loadbalancer.server.port=8000
+
+volumes:
+  entaoganhei_data:
+    name: entaoganhei_data
+
+networks:
+  network_swarm_public:
+    external: true
