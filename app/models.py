@@ -21,8 +21,8 @@ class Member(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80), unique=True)
-    username: Mapped[str] = mapped_column(String(40), unique=True)  # stored lowercase
-    email: Mapped[str | None] = mapped_column(String(200), unique=True)  # stored lowercase
+    email: Mapped[str | None] = mapped_column(String(200), unique=True)  # stored lowercase; the login
+    # None until the first login: whatever password is typed then becomes theirs.
     password_hash: Mapped[str | None] = mapped_column(String(200))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     phone: Mapped[str | None] = mapped_column(String(32))
@@ -143,13 +143,3 @@ class LoginSession(Base):
 
     member: Mapped[Member] = relationship()
 
-
-class PasswordReset(Base):
-    __tablename__ = "password_resets"
-
-    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
-    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime)
-    used: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    member: Mapped[Member] = relationship()

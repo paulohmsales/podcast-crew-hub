@@ -1,34 +1,57 @@
-import re
-
 from fastapi.testclient import TestClient
 
-from app import auth, mail
+from app import auth
 from app.main import app
 from app.models import LoginSession, Member
 from tests.conftest import PASSWORD
 
 
-def _login(login, password):
+def _login(email, password):
     c = TestClient(app)
-    res = c.post("/entrar", data={"login": login, "password": password}, follow_redirects=False)
+    res = c.post("/entrar", data={"email": email, "password": password}, follow_redirects=False)
     return c, res
 
 
-def test_login_with_username_or_email(paulo):
-    c, res = _login("Paulo", PASSWORD)  # case-insensitive username
+def test_login_with_email(paulo):
+    c, res = _login(" Paulo@EX.com ", PASSWORD)  # case and spaces don't matter
     assert res.status_code == 303 and res.headers["location"] == "/"
     assert "Oi, Paulo" in c.get("/").text
-    c2, res = _login("paulo@ex.com", PASSWORD)
-    assert res.status_code == 303
 
 
-def test_wrong_password_and_throttle(paulo):
-    _, res = _login("paulo", "errada")
-    assert res.status_code == 200 and "incorretos" in res.text
+def test_wrong_password_unknown_email_and_throttle(paulo):
+    assert "Senha incorreta" in _login("paulo@ex.com", "errada")[1].text
+    assert "não está no grupo" in _login("x@ex.com", "qualquer-coisa")[1].text
     for _ in range(10):
-        _login("paulo", "errada")
-    _, res = _login("paulo", PASSWORD)
-    assert "Muitas tentativas" in res.text
+        _login("paulo@ex.com", "errada")
+    assert "Muitas tentativas" in _login("paulo@ex.com", PASSWORD)[1].text
+
+
+def test_first_access_sets_password(client, db):
+    client.post("/membros", data={"name": "Caio", "email": "Caio@ex.com"})
+    caio = db.query(Member).filter_by(email="caio@ex.com").one()
+    assert caio.password_hash is None
+    assert "ainda não entrou" in client.get("/membros").text
+    # too short: refused, still no password
+    assert "Primeiro acesso" in _login("caio@ex.com", "curta")[1].text
+    c, res = _login("caio@ex.com", "minha-senha")
+    assert res.status_code == 303 and "Oi, Caio" in c.get("/").text
+    # from now on only that password works
+    assert "Senha incorreta" in _login("caio@ex.com", "outra-senha")[1].text
+    assert _login("caio@ex.com", "minha-senha")[1].status_code == 303
+
+
+def test_admin_reopens_first_access(client, ana_client, ana, db):
+    assert ana_client.post(f"/membros/{ana.id}/liberar").status_code == 403
+    client.post(f"/membros/{ana.id}/liberar")
+    assert ana_client.get("/", follow_redirects=False).status_code == 303  # logged out
+    assert _login("ana@ex.com", "nova-senha-ana")[1].status_code == 303
+    assert "Senha incorreta" in _login("ana@ex.com", PASSWORD)[1].text
+
+
+def test_add_member_validation(client, ana_client):
+    assert ana_client.post("/membros", data={"name": "X", "email": "x@ex.com"}).status_code == 403
+    assert "Email inválido" in client.post("/membros", data={"name": "X", "email": "nope"}).text
+    assert "já está em uso" in client.post("/membros", data={"name": "X", "email": "ANA@ex.com"}).text
 
 
 def test_logout_kills_session(client, db):
@@ -38,70 +61,17 @@ def test_logout_kills_session(client, db):
     assert client.get("/", follow_redirects=False).headers["location"] == "/entrar"
 
 
-def test_admin_adds_member_and_password_is_emailed(client, ana_client, db, outbox):
-    assert ana_client.post("/membros", data={"name": "Caio", "username": "caio", "email": "c@ex.com"}).status_code == 403
-    res = client.post("/membros", data={"name": "Caio", "username": "Caio", "email": "C@ex.com"})
-    assert "Acesso enviado para c@ex.com" in res.text
-    to, subject, text = outbox[-1]
-    assert to == "c@ex.com"
-    password = re.search(r"Senha:\s+(\S+)", text).group(1)
-    assert "Usuário:  caio" in text
-    _, res = _login("caio", password)
-    assert res.status_code == 303
-    # duplicates are refused
-    res = client.post("/membros", data={"name": "Outro", "username": "caio", "email": "x@ex.com"})
-    assert "já está em uso" in res.text
-
-
-def test_failed_email_shows_password_to_admin(client, monkeypatch, outbox):
-    def boom(*_):
-        raise mail.MailError("domínio não verificado")
-
-    monkeypatch.setattr(mail, "send", boom)
-    res = client.post("/membros", data={"name": "Dani", "username": "dani", "email": "d@ex.com"})
-    assert "O email não foi enviado" in res.text and "domínio não verificado" in res.text
-    password = re.search(r"Senha: <code>([^<]+)</code>", res.text).group(1)
-    _, res = _login("dani", password)
-    assert res.status_code == 303
-
-
-def test_resend_access_replaces_password(client, ana, outbox, db):
-    client.post(f"/membros/{ana.id}/reenviar")
-    _, res = _login("ana", PASSWORD)
-    assert res.status_code == 200  # old password no longer works
-    new = re.search(r"Senha:\s+(\S+)", outbox[-1][2]).group(1)
-    assert _login("ana", new)[1].status_code == 303
-
-
-def test_forgot_and_reset_password(ana, outbox):
-    c = TestClient(app)
-    res = c.post("/esqueci", data={"login": "ana@ex.com"})
-    assert "Se esse usuário" in res.text
-    link = re.search(r"(/redefinir/\S+)", outbox[-1][2]).group(1)
-    assert "ana" in c.get(link).text
-    res = c.post(link, data={"password": "nova-senha-1", "confirm": "outra"})
-    assert "não batem" in res.text
-    res = c.post(link, data={"password": "nova-senha-1", "confirm": "nova-senha-1"}, follow_redirects=False)
-    assert res.status_code == 303
-    assert "expirou ou já foi usado" in c.get(link).text  # single use
-    assert _login("ana", "nova-senha-1")[1].status_code == 303
-    # unknown accounts get the same answer and no email
-    n = len(outbox)
-    assert "Se esse usuário" in c.post("/esqueci", data={"login": "ninguem"}).text
-    assert len(outbox) == n
-
-
 def test_change_password_and_profile(ana_client, db, ana):
     res = ana_client.post("/conta/senha", data={"current": "errada", "password": "abcdefgh", "confirm": "abcdefgh"})
     assert "incorreta" in res.text
     res = ana_client.post("/conta/senha", data={"current": PASSWORD, "password": "abcdefgh", "confirm": "abcdefgh"})
     assert "Senha trocada" in res.text
     assert ana_client.get("/", follow_redirects=False).status_code == 200  # still logged in here
-    assert _login("ana", "abcdefgh")[1].status_code == 303
-    res = ana_client.post("/conta", data={"name": "Ana Lu", "username": "analu", "email": "ANA@ex.com", "phone": ""})
+    assert _login("ana@ex.com", "abcdefgh")[1].status_code == 303
+    res = ana_client.post("/conta", data={"name": "Ana Lu", "email": "ANALU@ex.com", "phone": ""})
     assert "Dados salvos" in res.text
     db.expire_all()
-    assert db.get(Member, ana.id).username == "analu"
+    assert db.get(Member, ana.id).email == "analu@ex.com"
 
 
 def test_password_hash_roundtrip():

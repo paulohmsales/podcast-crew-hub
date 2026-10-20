@@ -8,17 +8,6 @@
 
 {% if notice %}<p class="card callout ok" role="status">{{ notice }}</p>{% endif %}
 {% if error %}<p class="card callout error" role="alert">{{ error }}</p>{% endif %}
-{% if credentials %}
-{% set m, password, reason = credentials %}
-<section class="card callout" role="alert">
-  <h2>O email não foi enviado</h2>
-  <p class="muted small">{{ reason }}</p>
-  <p>Passe o acesso de <strong>{{ m.name }}</strong> por outro canal. Esta senha não aparece de novo.</p>
-  <p class="credentials">Usuário: <code>{{ m.username }}</code><br>Senha: <code>{{ password }}</code></p>
-  {% set text = "Oi " ~ m.name ~ "! Seu acesso ao app do Então Ganhei:\n" ~ BASE_URL ~ "/entrar\nUsuário: " ~ m.username ~ "\nSenha: " ~ password ~ "\nTroque a senha em Minha conta." %}
-  <a class="btn small whatsapp" href="{{ whatsapp_url(text, m.phone) }}" target="_blank" rel="noopener">Mandar no WhatsApp</a>
-</section>
-{% endif %}
 
 <section class="card">
   <ul class="plain members">
@@ -26,27 +15,27 @@
     <li id="m{{ m.id }}">
       <div class="member-head">
         <strong>{{ m.name }}</strong>
-        <span class="muted small">@{{ m.username }}</span>
         {% if m.is_admin %}<span class="pill">admin</span>{% endif %}
         {% if m.id == me.id %}<span class="pill ok">você</span>{% endif %}
-        {% if not m.password_hash %}<span class="pill warn">sem senha</span>{% endif %}
+        {% if not m.password_hash %}<span class="pill warn">ainda não entrou</span>{% endif %}
       </div>
       {% if me.is_admin %}
       <div class="muted small">{{ m.email or 'sem email' }}{% if m.phone %} · {{ m.phone }}{% endif %}</div>
       <div class="actions">
-        <form method="post" action="/membros/{{ m.id }}/reenviar" class="inline"
-              onsubmit="return confirm('Gerar uma senha nova para {{ m.name }} e mandar por email? A senha atual para de funcionar.')">
-          <button class="btn small">Reenviar acesso</button>
+        {% if m.password_hash and m.id != me.id %}
+        <form method="post" action="/membros/{{ m.id }}/liberar" class="inline"
+              onsubmit="return confirm('Apagar a senha de {{ m.name }}? No próximo acesso com o email, a senha digitada vira a nova.')">
+          <button class="link-btn">liberar novo acesso</button>
         </form>
+        {% endif %}
         <details>
           <summary class="link-btn">editar</summary>
           <form method="post" action="/membros/{{ m.id }}/editar" class="stack">
             <div class="row">
               <label>Nome <input name="name" value="{{ m.name }}" required maxlength="80"></label>
-              <label>Usuário <input name="username" value="{{ m.username }}" required maxlength="40" autocapitalize="none"></label>
+              <label>Email <input type="email" name="email" value="{{ m.email or '' }}" required></label>
             </div>
             <div class="row">
-              <label>Email <input type="email" name="email" value="{{ m.email or '' }}"></label>
               <label>WhatsApp <input name="phone" value="{{ m.phone or '' }}"></label>
             </div>
             {% if m.id != me.id %}
@@ -65,19 +54,18 @@
 {% if me.is_admin %}
 <section class="card" id="novo">
   <h2>Adicionar pessoa</h2>
-  <p class="muted small">O app cria uma senha e manda usuário e senha para o email da pessoa.</p>
+  <p class="muted small">No primeiro acesso, a pessoa entra com esse email e a senha que digitar vira a senha dela. Avise no grupo.</p>
   {% set f = form or {} %}
   <form method="post" action="/membros#novo" class="stack">
     <div class="row">
       <label>Nome <input name="name" value="{{ f.name or '' }}" required maxlength="80"></label>
-      <label>Usuário <input name="username" value="{{ f.username or '' }}" required maxlength="40" autocapitalize="none" autocorrect="off" placeholder="ex.: bruno"></label>
+      <label>Email <input type="email" name="email" value="{{ f.email or '' }}" required autocapitalize="none"></label>
     </div>
     <div class="row">
-      <label>Email <input type="email" name="email" value="{{ f.email or '' }}" required></label>
       <label>WhatsApp <span class="muted">(opcional)</span> <input name="phone" value="{{ f.phone or '' }}" placeholder="+55 11 91234-5678"></label>
     </div>
-    <label class="check"><input type="checkbox" name="is_admin" value="true"> Admin (pode adicionar gente e reenviar acessos)</label>
-    <button class="btn primary">Adicionar e mandar acesso</button>
+    <label class="check"><input type="checkbox" name="is_admin" value="true"> Admin (pode adicionar gente e liberar novo acesso)</label>
+    <button class="btn primary">Adicionar</button>
   </form>
 </section>
 {% endif %}

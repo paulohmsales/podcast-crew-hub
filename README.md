@@ -10,23 +10,18 @@ FastAPI + Jinja, SQLite, sem build de frontend.
 
     uv sync
     uv run alembic upgrade head
-    uv run python -m app.cli add-member "Paulo" --username paulo --admin   # imprime a senha
+    uv run python -m app.cli add-member "Paulo" paulo@exemplo.com --admin
     uv run uvicorn app.main:app --reload
 
 Testes: `uv run pytest`.
 
 ## Login
 
-Usuário (ou email) e senha. Na página **Grupo**, um admin adiciona a pessoa
-(nome, usuário, email); o app gera uma senha e manda usuário + senha por email
-(SMTP de uma conta Gmail). Se o email falhar, a senha aparece na tela uma vez para passar por
-outro canal. "Reenviar acesso" gera uma senha nova. Cada um troca a senha e o
-email em **Minha conta**, e "Esqueci minha senha" manda um link (2 h, uso único).
-
-Email: `SMTP_USER` (o Gmail) e `SMTP_PASSWORD` (senha de app do Gmail, exige
-verificação em duas etapas) em `/opt/entaoganhei/.env` no VPS; opcionais
-`SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM`. Depois de editar: `docker service update
---force entaoganhei_web`.
+Email e senha. Na página **Grupo**, um admin adiciona a pessoa (nome e email).
+No primeiro acesso ela entra com o email e a senha que digitar vira a dela
+(mínimo 8 caracteres). Esqueceu a senha: um admin clica em "liberar novo
+acesso" e o próximo login com o email define a senha de novo. Nada é enviado
+por email.
 
 ## Produção (VPS)
 
@@ -36,9 +31,9 @@ do Traefik; banco SQLite no volume `entaoganhei_data`.
     deploy/deploy.sh          # rsync → build no VPS → stack deploy (migrações rodam no start)
 
 Primeira vez, no VPS: `/opt/entaoganhei/src/deploy/install-backup.sh` (backup diário
-em `/opt/entaoganhei/backups`, 30 dias). Criar o primeiro admin:
+em `/opt/entaoganhei/backups`, 30 dias). Liberar o primeiro acesso de um admin pela linha de comando:
 
-    ssh jobz-vps 'docker exec $(docker ps -q -f name=entaoganhei_web) python -m app.cli reset-password paulo'
+    ssh jobz-vps 'docker exec $(docker ps -q -f name=entaoganhei_web) python -m app.cli first-access Paulo --email paulo@exemplo.com'
 
 ## Próximos passos
 

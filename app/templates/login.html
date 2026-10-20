@@ -6,14 +6,14 @@
   <h1>Então Ganhei</h1>
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <form method="post" action="/entrar" class="stack left">
-    <label>Usuário ou email
-      <input name="login" value="{{ login or '' }}" required autocomplete="username" autocapitalize="none" autocorrect="off" autofocus>
+    <label>Email
+      <input type="email" name="email" value="{{ email or '' }}" required autocomplete="username" autocapitalize="none" autocorrect="off" autofocus>
     </label>
     <label>Senha
       <input type="password" name="password" required autocomplete="current-password">
     </label>
     <button class="btn primary block">Entrar</button>
   </form>
-  <p class="small"><a href="/esqueci">Esqueci minha senha</a></p>
+  <p class="muted small">Primeiro acesso? Use seu email e escolha uma senha (mínimo 8 caracteres). Ela vira a sua senha.</p>
 </section>
 {% endblock %}

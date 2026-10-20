@@ -8,22 +8,18 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
 import pytest
 from fastapi.testclient import TestClient
 
-from app import auth, mail
+from app import auth
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from app.models import Member
 from app.web import COOKIE
 
 PASSWORD = "senha-forte-123"
-REAL_SEND = mail.send  # the autouse outbox fixture replaces it
 
 
 @pytest.fixture(autouse=True)
-def outbox(monkeypatch):
-    sent = []
-    monkeypatch.setattr(mail, "send", lambda to, subject, text: sent.append((to, subject, text)))
+def _reset_throttle():
     auth.login_throttle.fails.clear()
-    return sent
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +32,7 @@ def db():
 
 def _member(db, name, admin=False):
     member = Member(
-        name=name, username=name.lower(), email=f"{name.lower()}@ex.com",
+        name=name, email=f"{name.lower()}@ex.com",
         password_hash=auth.hash_password(PASSWORD), is_admin=admin,
     )
     db.add(member)

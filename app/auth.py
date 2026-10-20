@@ -1,20 +1,18 @@
-"""Passwords (stdlib scrypt), login sessions, reset links and a login throttle."""
+"""Passwords (stdlib scrypt), login sessions and a login throttle."""
 
 import hashlib
 import hmac
 import secrets
-import string
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.models import LoginSession, Member, PasswordReset
+from app.models import LoginSession, Member
 
 SESSION_DAYS = 180
-RESET_HOURS = 2
 MIN_PASSWORD = 8
 
 _N, _R, _P = 2**14, 8, 1
@@ -37,34 +35,26 @@ def verify_password(password: str, stored: str | None) -> bool:
     return hmac.compare_digest(check.hex(), digest)
 
 
-def generate_password() -> str:
-    # Readable: no 0/O/1/l/I, grouped for typing on a phone.
-    alphabet = "".join(c for c in string.ascii_letters + string.digits if c not in "0O1lI")
-    raw = "".join(secrets.choice(alphabet) for _ in range(12))
-    return f"{raw[:4]}-{raw[4:8]}-{raw[8:]}"
-
-
 def password_problem(password: str) -> str | None:
     if len(password) < MIN_PASSWORD:
         return f"A senha precisa ter pelo menos {MIN_PASSWORD} caracteres."
     return None
 
 
-def normalize_username(value: str) -> str:
+def normalize_email(value: str) -> str:
     return value.strip().lower()
 
 
-def username_problem(value: str) -> str | None:
-    if not 3 <= len(value) <= 40 or not all(c.isalnum() or c in "._-" for c in value):
-        return "Usuário: 3 a 40 letras, números, ponto, hífen ou _."
+def email_problem(email: str) -> str | None:
+    local, _, domain = email.partition("@")
+    if not local or "." not in domain or " " in email:
+        return "Email inválido."
     return None
 
 
-def find_member(db: Session, login: str) -> Member | None:
-    login = login.strip().lower()
-    if not login:
-        return None
-    return db.scalar(select(Member).where(or_(Member.username == login, Member.email == login)))
+def find_member(db: Session, email: str) -> Member | None:
+    email = normalize_email(email)
+    return db.scalar(select(Member).where(Member.email == email)) if email else None
 
 
 def _sha(token: str) -> str:
@@ -107,32 +97,18 @@ def set_password(db: Session, member: Member, password: str) -> None:
     end_all_sessions(db, member)
 
 
-def create_reset(db: Session, member: Member) -> str:
-    token = secrets.token_urlsafe(32)
-    db.add(
-        PasswordReset(
-            token_hash=_sha(token), member_id=member.id, expires_at=datetime.now() + timedelta(hours=RESET_HOURS)
-        )
-    )
-    db.commit()
-    return token
+def clear_password(db: Session, member: Member) -> None:
+    """Back to first access: the next login with their email sets the password. Caller commits."""
+    member.password_hash = None
+    end_all_sessions(db, member)
 
 
-def valid_reset(db: Session, token: str) -> PasswordReset | None:
-    reset = db.get(PasswordReset, _sha(token))
-    if not reset or reset.used or reset.expires_at < datetime.now():
-        return None
-    return reset
-
-
-def taken_by_other(db: Session, member_id: int | None, name: str, username: str, email: str) -> str | None:
-    """Message if another member already uses this name, username or email."""
+def taken_by_other(db: Session, member_id: int | None, name: str, email: str) -> str | None:
+    """Message if another member already uses this name or email."""
     others = select(Member).where(Member.id != member_id) if member_id else select(Member)
     if db.scalar(others.where(Member.name == name)):
         return "Já existe alguém com esse nome."
-    if db.scalar(others.where(Member.username == username)):
-        return "Esse usuário já está em uso."
-    if email and db.scalar(others.where(Member.email == email)):
+    if db.scalar(others.where(Member.email == email)):
         return "Esse email já está em uso."
     return None
 
