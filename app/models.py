@@ -1,11 +1,11 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Table, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
-# Theme lifecycle, in order. The labels are what the UI shows.
+# Episode lifecycle, in order: the board's columns. The labels are what the UI shows.
 THEME_STATUSES = {
     "ideia": "Ideia",
     "pauta": "Na pauta",
@@ -29,7 +29,36 @@ class Member(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class Segment(Base):
+    """A recurring segment ("quadro") an episode can include."""
+
+    __tablename__ = "segments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+theme_segments = Table(
+    "theme_segments",
+    Base.metadata,
+    Column("theme_id", ForeignKey("themes.id", ondelete="CASCADE"), primary_key=True),
+    Column("segment_id", ForeignKey("segments.id", ondelete="CASCADE"), primary_key=True),
+)
+
+theme_participants = Table(
+    "theme_participants",
+    Base.metadata,
+    Column("theme_id", ForeignKey("themes.id", ondelete="CASCADE"), primary_key=True),
+    Column("member_id", ForeignKey("members.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class Theme(Base):
+    """An episode, from first idea to published (shown as "Episódio" in the UI)."""
+
     __tablename__ = "themes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -37,6 +66,9 @@ class Theme(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     links: Mapped[str] = mapped_column(Text, default="")  # one URL per line
     status: Mapped[str] = mapped_column(String(20), default="ideia", index=True)
+    number: Mapped[int | None] = mapped_column(Integer)  # episode number once it has one
+    episode_url: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    published_on: Mapped[date | None] = mapped_column(Date)
     created_by_id: Mapped[int] = mapped_column(ForeignKey("members.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -44,6 +76,8 @@ class Theme(Base):
     )
 
     created_by: Mapped[Member] = relationship()
+    segments: Mapped[list[Segment]] = relationship(secondary=theme_segments, order_by=Segment.position)
+    participants: Mapped[list[Member]] = relationship(secondary=theme_participants, order_by=Member.name)
     votes: Mapped[list["ThemeVote"]] = relationship(cascade="all, delete-orphan")
     comments: Mapped[list["ThemeComment"]] = relationship(
         cascade="all, delete-orphan", order_by="ThemeComment.created_at"

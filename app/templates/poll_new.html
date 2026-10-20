@@ -6,7 +6,7 @@
   <h1>Nova rodada de horários</h1>
   <p class="muted">Escolha os dias e a faixa de horário. Cada pessoa marca quando pode, e o app mostra os melhores horários.</p>
   <form method="post" action="/agenda" class="stack">
-    <label>Tema <span class="muted">(opcional)</span>
+    <label>Episódio <span class="muted">(opcional)</span>
       <select name="theme_id">
         <option value="">— a definir —</option>
         {% for t in themes %}<option value="{{ t.id }}" {{ 'selected' if t.id == theme_id }}>{{ t.title }}</option>{% endfor %}

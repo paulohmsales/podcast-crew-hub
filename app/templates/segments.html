@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Quadros · Então Ganhei{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/episodios">← Episódios</a></p>
+<h1>Quadros</h1>
+<p class="muted">Os quadros fixos do podcast. Marque em cada episódio quais quadros entraram e filtre o painel por quadro.</p>
+
+{% set active = segments | rejectattr('archived') | list %}
+{% set archived = segments | selectattr('archived') | list %}
+
+<section class="card">
+  {% if active %}
+  <ul class="plain segments">
+    {% for s in active %}
+    <li>
+      <div class="seg-row">
+        <div class="seg-order">
+          <form method="post" action="/quadros/{{ s.id }}/mover" class="inline"><input type="hidden" name="direcao" value="cima">
+            <button class="icon-btn" {{ 'disabled' if loop.first }} aria-label="Subir {{ s.name }}">▲</button></form>
+          <form method="post" action="/quadros/{{ s.id }}/mover" class="inline"><input type="hidden" name="direcao" value="baixo">
+            <button class="icon-btn" {{ 'disabled' if loop.last }} aria-label="Descer {{ s.name }}">▼</button></form>
+        </div>
+        <div class="grow">
+          <a href="/episodios?ver=lista&status=todos&quadro={{ s.id }}"><strong>{{ s.name }}</strong></a>
+          <span class="muted small">· {{ counts.get(s.id, 0) }} episódio{{ 's' if counts.get(s.id, 0) != 1 }}</span>
+          {% if s.description %}<div class="muted small">{{ s.description }}</div>{% endif %}
+        </div>
+      </div>
+      <details>
+        <summary class="link-btn">editar</summary>
+        <form method="post" action="/quadros/{{ s.id }}/editar" class="stack">
+          <label>Nome <input name="name" value="{{ s.name }}" required maxlength="80"></label>
+          <label>Descrição <input name="description" value="{{ s.description }}"></label>
+          <div class="row">
+            <button class="btn small primary">Salvar</button>
+          </div>
+        </form>
+        <form method="post" action="/quadros/{{ s.id }}/arquivar" class="inline"><button class="link-btn">arquivar</button></form>
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nenhum quadro ainda.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Novo quadro</h2>
+  <form method="post" action="/quadros" class="stack">
+    <div class="row">
+      <label>Nome <input name="name" required maxlength="80" placeholder="Ex.: Jogo da Semana"></label>
+      <label class="grow">Descrição <span class="muted">(opcional)</span> <input name="description" placeholder="O que rola nesse quadro"></label>
+    </div>
+    <button class="btn primary">Criar quadro</button>
+  </form>
+</section>
+
+{% if archived %}
+<section class="card">
+  <h2>Arquivados</h2>
+  <ul class="plain segments">
+    {% for s in archived %}
+    <li class="seg-row">
+      <span class="grow muted">{{ s.name }} · {{ counts.get(s.id, 0) }} episódio{{ 's' if counts.get(s.id, 0) != 1 }}</span>
+      <form method="post" action="/quadros/{{ s.id }}/arquivar" class="inline"><button class="link-btn">reativar</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Episódios · Então Ganhei{% endblock %}
+{% block page_class %}wide{% endblock %}
+{% block content %}
+{% include "_episodes_head.html" %}
+
+<div class="board" id="board">
+  {% for col in columns %}
+  {% set items = by_status[col] %}
+  <section class="column" data-status="{{ col }}" aria-labelledby="col-{{ col }}">
+    <header class="column-head status-{{ col }}">
+      <h2 id="col-{{ col }}">{{ STATUSES[col] }}</h2>
+      <span class="count" data-count>{{ items | length }}</span>
+    </header>
+    <ol class="cards" data-drop>
+      {% for t in items %}
+      <li class="ep-card" draggable="true" data-id="{{ t.id }}">
+        <a class="ep-title" href="/episodios/{{ t.id }}">
+          {% if t.number %}<span class="ep-num">#{{ t.number }}</span>{% endif %}{{ t.title }}
+        </a>
+        {% if t.segments %}
+        <div class="chips">{% for s in t.segments %}<span class="chip seg">{{ s.name }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if t.participants %}
+        <div class="people" title="{{ t.participants | map(attribute='name') | join(', ') }}">
+          {% for m in t.participants[:6] %}<span class="avatar" aria-hidden="true">{{ m.name[:1] | upper }}</span>{% endfor %}
+          <span class="sr-only">Com {{ t.participants | map(attribute='name') | join(', ') }}</span>
+          <span class="muted small names">{{ t.participants | map(attribute='name') | join(', ') }}</span>
+        </div>
+        {% endif %}
+        <div class="ep-foot">
+          {% if col in ('ideia', 'pauta') %}
+          <form method="post" action="/episodios/{{ t.id }}/voto" class="inline">
+            <button class="vote-chip {{ 'on' if t.id in my_votes }}" aria-pressed="{{ 'true' if t.id in my_votes else 'false' }}"
+                    title="{{ 'Tirar meu voto' if t.id in my_votes else 'Quero gravar esse' }}">▲ {{ vote_counts.get(t.id, 0) }}</button>
+          </form>
+          {% elif col == 'agendado' and upcoming.get(t.id) %}
+          <span class="muted small">🎙️ {{ fmt_slot(upcoming[t.id]) }}</span>
+          {% elif t.published_on %}
+          <span class="muted small">{{ fmt_day(t.published_on) }}/{{ t.published_on.year }}</span>
+          {% endif %}
+          {% if t.episode_url %}<a class="listen" href="{{ t.episode_url }}" target="_blank" rel="noopener">▶ Ouvir</a>{% endif %}
+          <form method="post" action="/episodios/{{ t.id }}/status" class="move">
+            <label class="sr-only" for="mv{{ t.id }}">Mover {{ t.title }}</label>
+            <select id="mv{{ t.id }}" name="status" onchange="this.form.submit()" title="Mover para">
+              {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if key == col }}>{{ '→ ' ~ label if key != col else label }}</option>{% endfor %}
+            </select>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% if not items %}<p class="empty-col muted small">Arraste um episódio para cá</p>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+<p class="board-foot small">
+  {% if descartados %}<a href="/episodios?ver=painel">Esconder descartados</a>{% else %}<a href="/episodios?ver=painel&descartados=1">Mostrar descartados</a>{% endif %}
+</p>
+
+<div class="narrow">{% include "_new_episode.html" %}</div>
+{% endblock %}
+
+{% block scripts %}<script src="/static/board.js?v=1" defer></script>{% endblock %}

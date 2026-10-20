@@ -14,33 +14,33 @@ def test_requires_login():
 
 
 def test_theme_create_vote_comment_status(client, ana_client, db):
-    res = client.post("/temas", data={"title": "Jogos de blefe", "description": "Coup, Skull", "links": "https://x.y\n"})
+    res = client.post("/episodios", data={"title": "Jogos de blefe", "description": "Coup, Skull", "links": "https://x.y\n"})
     theme_id = int(res.url.path.rsplit("/", 1)[1])
     # creator's vote is automatic; Ana adds hers, then takes it back
-    ana_client.post(f"/temas/{theme_id}/voto")
+    ana_client.post(f"/episodios/{theme_id}/voto")
     assert db.query(ThemeVote).filter_by(theme_id=theme_id).count() == 2
-    ana_client.post(f"/temas/{theme_id}/voto")
+    ana_client.post(f"/episodios/{theme_id}/voto")
     assert db.query(ThemeVote).filter_by(theme_id=theme_id).count() == 1
 
-    ana_client.post(f"/temas/{theme_id}/comentarios", data={"body": "Adiciono Love Letter"})
-    page = client.get(f"/temas/{theme_id}").text
+    ana_client.post(f"/episodios/{theme_id}/comentarios", data={"body": "Adiciono Love Letter"})
+    page = client.get(f"/episodios/{theme_id}").text
     assert "Adiciono Love Letter" in page and "Coup, Skull" in page
 
-    client.post(f"/temas/{theme_id}/status", data={"status": "pauta"})
+    client.post(f"/episodios/{theme_id}/status", data={"status": "pauta"})
     db.expire_all()
     assert db.get(Theme, theme_id).status == "pauta"
-    assert "Jogos de blefe" in client.get("/temas").text
-    assert "Jogos de blefe" not in client.get("/temas?status=publicado").text
+    assert "Jogos de blefe" in client.get("/episodios").text
+    assert "Jogos de blefe" not in client.get("/episodios?ver=lista&status=publicado").text
 
 
 def test_only_creator_or_admin_deletes_theme(client, ana_client, db):
-    res = ana_client.post("/temas", data={"title": "Euros"})
+    res = ana_client.post("/episodios", data={"title": "Euros"})
     theme_id = int(res.url.path.rsplit("/", 1)[1])
     from tests.conftest import _client, _member
 
     bia = _client(_member(db, "Bia"))
-    assert bia.post(f"/temas/{theme_id}/excluir").status_code == 403
-    client.post(f"/temas/{theme_id}/excluir")  # admin
+    assert bia.post(f"/episodios/{theme_id}/excluir").status_code == 403
+    client.post(f"/episodios/{theme_id}/excluir")  # admin
     db.expire_all()
     assert db.get(Theme, theme_id) is None
 
@@ -81,7 +81,7 @@ def test_poll_availability_and_best_window(client, ana_client, db, paulo, ana):
 
 
 def test_book_recording_schedules_theme_and_ics(client, db):
-    res = client.post("/temas", data={"title": "Party games"})
+    res = client.post("/episodios", data={"title": "Party games"})
     theme_id = int(res.url.path.rsplit("/", 1)[1])
     poll_id = _make_poll(client, theme_id=str(theme_id))
     client.post(f"/agenda/{poll_id}/marcar", data={"starts_at": "2026-11-03T19:00", "duration_minutes": "90"})

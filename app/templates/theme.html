@@ -1,23 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ theme.title }} · Então Ganhei{% endblock %}
 {% block content %}
-<p class="crumb"><a href="/temas">← Temas</a></p>
+<p class="crumb"><a href="/episodios">← Episódios</a></p>
 
 <article class="card">
   <div class="theme-head">
-    <form method="post" action="/temas/{{ theme.id }}/voto" class="vote">
-      <button type="submit" class="vote-btn big {{ 'on' if voted }}" aria-pressed="{{ 'true' if voted else 'false' }}">
+    <form method="post" action="/episodios/{{ theme.id }}/voto" class="vote">
+      <button type="submit" class="vote-btn big {{ 'on' if voted }}" aria-pressed="{{ 'true' if voted else 'false' }}"
+              title="{{ 'Tirar meu voto' if voted else 'Quero gravar esse' }}">
         <span class="arrow">▲</span><span class="count">{{ voters | length }}</span>
       </button>
     </form>
     <div>
-      <h1>{{ theme.title }}</h1>
+      <h1>{% if theme.number %}<span class="ep-num">#{{ theme.number }}</span>{% endif %}{{ theme.title }}</h1>
       <p class="meta">
         <span class="pill status-{{ theme.status }}">{{ STATUSES[theme.status] }}</span>
         sugerido por {{ theme.created_by.name }} em {{ fmt_day(theme.created_at.date()) }}
+        {% if theme.published_on %} · no ar em {{ fmt_day(theme.published_on) }}/{{ theme.published_on.year }}{% endif %}
       </p>
     </div>
   </div>
+
+  {% if theme.episode_url %}
+  <p><a class="btn primary" href="{{ theme.episode_url }}" target="_blank" rel="noopener">▶ Ouvir o episódio</a></p>
+  {% endif %}
+
+  <dl class="facts">
+    <dt>Quadros</dt>
+    <dd>{% for s in theme.segments %}<span class="chip seg">{{ s.name }}</span>{% else %}<span class="muted">nenhum</span>{% endfor %}</dd>
+    <dt>Participantes</dt>
+    <dd>{% if theme.participants %}{{ theme.participants | map(attribute='name') | join(', ') }}{% else %}<span class="muted">ninguém ainda</span>{% endif %}</dd>
+    {% if recordings %}
+    <dt>Gravação</dt>
+    <dd>{% for r in recordings %}{{ fmt_slot(r.starts_at) }}{{ ", " if not loop.last }}{% endfor %}</dd>
+    {% endif %}
+  </dl>
 
   {% if theme.description %}<div class="prose">{{ theme.description }}</div>{% endif %}
 
@@ -34,7 +51,7 @@
   </p>
 
   <div class="actions">
-    <form method="post" action="/temas/{{ theme.id }}/status" class="inline">
+    <form method="post" action="/episodios/{{ theme.id }}/status" class="inline">
       <label class="sr-only" for="status">Status</label>
       <select id="status" name="status" onchange="this.form.submit()">
         {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if theme.status == key }}>{{ label }}</option>{% endfor %}
@@ -44,23 +61,50 @@
     {% if theme.status in ('ideia', 'pauta', 'agendado') %}
     <a class="btn" href="/agenda/nova?tema={{ theme.id }}">📅 Marcar gravação</a>
     {% endif %}
-    <details class="edit">
-      <summary class="btn">Editar</summary>
-      <form method="post" action="/temas/{{ theme.id }}/editar" class="stack">
-        <label>Título <input name="title" value="{{ theme.title }}" required maxlength="200"></label>
-        <label>Ideia / pauta <textarea name="description" rows="5">{{ theme.description }}</textarea></label>
-        <label>Links <textarea name="links" rows="3">{{ theme.links }}</textarea></label>
-        <div class="row">
-          <button class="btn primary">Salvar</button>
-        </div>
-      </form>
-      {% if can_delete %}
-      <form method="post" action="/temas/{{ theme.id }}/excluir" onsubmit="return confirm('Excluir esse tema?')">
-        <button class="btn danger">Excluir tema</button>
-      </form>
-      {% endif %}
-    </details>
   </div>
+
+  <details class="edit" {{ 'open' if request.query_params.get('editar') }}>
+    <summary class="btn">Editar episódio</summary>
+    <form method="post" action="/episodios/{{ theme.id }}/editar" class="stack">
+      <div class="row">
+        <label class="grow">Título <input name="title" value="{{ theme.title }}" required maxlength="200"></label>
+        <label class="num">Nº <input name="number" inputmode="numeric" pattern="[0-9]*" value="{{ theme.number or '' }}"></label>
+      </div>
+
+      <fieldset>
+        <legend>Quadros {% if not all_segments %}<a class="small" href="/quadros">criar quadros</a>{% endif %}</legend>
+        <div class="checks">
+          {% set mine = theme.segments | map(attribute='id') | list %}
+          {% for s in all_segments if not s.archived or s.id in mine %}
+          <label class="check pick"><input type="checkbox" name="segment_ids" value="{{ s.id }}" {{ 'checked' if s.id in mine }}> {{ s.name }}</label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Participantes</legend>
+        <div class="checks">
+          {% set lineup = theme.participants | map(attribute='id') | list %}
+          {% for m in members %}
+          <label class="check pick"><input type="checkbox" name="member_ids" value="{{ m.id }}" {{ 'checked' if m.id in lineup }}> {{ m.name }}</label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <label class="grow">Link do episódio <input type="url" name="episode_url" value="{{ theme.episode_url }}" placeholder="https://open.spotify.com/episode/..."></label>
+        <label>No ar em <input type="date" name="published_on" value="{{ theme.published_on.isoformat() if theme.published_on else '' }}"></label>
+      </div>
+      <label>Ideia / pauta <textarea name="description" rows="5">{{ theme.description }}</textarea></label>
+      <label>Links de referência <span class="muted">(um por linha)</span> <textarea name="links" rows="3">{{ theme.links }}</textarea></label>
+      <button class="btn primary">Salvar</button>
+    </form>
+    {% if can_delete %}
+    <form method="post" action="/episodios/{{ theme.id }}/excluir" onsubmit="return confirm('Excluir esse episódio?')">
+      <button class="link-btn danger">excluir episódio</button>
+    </form>
+    {% endif %}
+  </details>
 </article>
 
 <section class="card" id="comentarios">
@@ -73,7 +117,7 @@
         <strong>{{ c.member.name }}</strong>
         <span class="muted small">{{ fmt_day(c.created_at.date()) }} {{ c.created_at.strftime('%H:%M') }}</span>
         {% if c.member_id == me.id or me.is_admin %}
-        <form method="post" action="/temas/{{ theme.id }}/comentarios/{{ c.id }}/excluir" class="inline" onsubmit="return confirm('Apagar comentário?')">
+        <form method="post" action="/episodios/{{ theme.id }}/comentarios/{{ c.id }}/excluir" class="inline" onsubmit="return confirm('Apagar comentário?')">
           <button class="link-btn" title="Apagar">apagar</button>
         </form>
         {% endif %}
@@ -85,7 +129,7 @@
   {% else %}
   <p class="muted">Sem comentários ainda.</p>
   {% endif %}
-  <form method="post" action="/temas/{{ theme.id }}/comentarios" class="stack">
+  <form method="post" action="/episodios/{{ theme.id }}/comentarios" class="stack">
     <label class="sr-only" for="body">Comentário</label>
     <textarea id="body" name="body" rows="3" required placeholder="Jogos que entram, ângulo do episódio, convidados…"></textarea>
     <button class="btn primary">Comentar</button>

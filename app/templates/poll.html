@@ -7,7 +7,7 @@
   <div>
     <h1>{{ poll.title }}</h1>
     <p class="meta">
-      {% if poll.theme %}Tema: <a href="/temas/{{ poll.theme.id }}">{{ poll.theme.title }}</a> · {% endif %}
+      {% if poll.theme %}Episódio: <a href="/episodios/{{ poll.theme.id }}">{{ poll.theme.title }}</a> · {% endif %}
       {{ fmt_day(poll.start_date) }} a {{ fmt_day(poll.end_date) }}, {{ fmt_minutes(poll.day_start) }}–{{ fmt_minutes(poll.day_end) }}
       {% if poll.closed %}<span class="pill">fechada</span>{% endif %}
     </p>
@@ -121,7 +121,7 @@
                min="{{ poll.start_date.isoformat() }}T00:00" max="{{ poll.end_date.isoformat() }}T23:59"></label>
         <label>Duração (min) <input type="number" name="duration_minutes" value="90" min="15" max="600" step="15"></label>
       </div>
-      <label>Tema
+      <label>Episódio
         <select name="theme_id">
           <option value="">{{ poll.theme.title if poll.theme else '— a definir —' }}</option>
           {% for t in themes if not poll.theme or t.id != poll.theme.id %}<option value="{{ t.id }}">{{ t.title }}</option>{% endfor %}

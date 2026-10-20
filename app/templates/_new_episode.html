@@ -1,0 +1,15 @@
+<section class="card new-episode" id="novo">
+  <h2>Nova ideia de episódio</h2>
+  <form method="post" action="/episodios" class="stack">
+    <label>Título
+      <input name="title" required maxlength="200" placeholder="Ex.: Jogos com traição escondida">
+    </label>
+    <label>Ideia / pauta
+      <textarea name="description" rows="3" placeholder="Por que vale um episódio? Que jogos e assuntos entram?"></textarea>
+    </label>
+    <label>Links <span class="muted">(um por linha)</span>
+      <textarea name="links" rows="2" placeholder="https://ludopedia.com.br/jogo/..."></textarea>
+    </label>
+    <button class="btn primary" type="submit">Adicionar ao painel</button>
+  </form>
+</section>

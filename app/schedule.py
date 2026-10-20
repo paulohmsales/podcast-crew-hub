@@ -72,6 +72,16 @@ def free_by_slot(poll: Poll) -> dict[datetime, set[int]]:
     return free
 
 
+def free_throughout(poll: Poll, start: datetime, minutes: int) -> set[int]:
+    """Member ids free in every poll slot between start and start + minutes."""
+    free = free_by_slot(poll)
+    end = start + timedelta(minutes=minutes)
+    inside = [s for s in all_slots(poll) if start <= s < end]
+    if not inside:
+        return set()
+    return set.intersection(*(free.get(s, set()) for s in inside))
+
+
 def best_windows(
     poll: Poll, members: list[Member], min_minutes: int = 60, limit: int = 5
 ) -> list[Window]:

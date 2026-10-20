@@ -6,9 +6,9 @@
     <span class="muted small">{{ r.duration_minutes }} min</span>
   </div>
   <div>
-    {% if r.theme %}<a href="/temas/{{ r.theme.id }}">{{ r.theme.title }}</a>
+    {% if r.theme %}<a href="/episodios/{{ r.theme.id }}">{{ r.theme.title }}</a>
       <span class="pill status-{{ r.theme.status }}">{{ STATUSES[r.theme.status] }}</span>
-    {% else %}<em class="muted">tema a definir</em>{% endif %}
+    {% else %}<em class="muted">episódio a definir</em>{% endif %}
     {% if r.notes %}<div class="muted small">{{ r.notes }}</div>{% endif %}
   </div>
   <div class="actions">

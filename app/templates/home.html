@@ -24,7 +24,7 @@
     {% for r in upcoming %}
     <li>
       <span class="when">{{ fmt_slot(r.starts_at) }}</span>
-      <span>{% if r.theme %}<a href="/temas/{{ r.theme.id }}">{{ r.theme.title }}</a>{% else %}<em>tema a definir</em>{% endif %}</span>
+      <span>{% if r.theme %}<a href="/episodios/{{ r.theme.id }}">{{ r.theme.title }}</a>{% else %}<em>episódio a definir</em>{% endif %}</span>
     </li>
     {% endfor %}
   </ul>
@@ -40,15 +40,15 @@
 
 <section class="card">
   <div class="card-head">
-    <h2>Temas mais votados</h2>
-    <a href="/temas">Todos →</a>
+    <h2>Ideias mais votadas</h2>
+    <a href="/episodios">Quadro de episódios →</a>
   </div>
   {% if top_themes %}
   <ul class="plain theme-list">
     {% for theme, votes in top_themes %}{% include "_theme_row.html" %}{% endfor %}
   </ul>
   {% else %}
-  <p class="muted">Nenhum tema ainda. <a href="/temas#novo">Sugira o primeiro</a>.</p>
+  <p class="muted">Nenhuma ideia ainda. <a href="/episodios#novo">Sugira a primeira</a>.</p>
   {% endif %}
 </section>
 {% endblock %}

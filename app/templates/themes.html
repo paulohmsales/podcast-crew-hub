@@ -1,52 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Temas · Então Ganhei{% endblock %}
+{% block title %}Episódios · Então Ganhei{% endblock %}
 {% block content %}
-<div class="page-head">
-  <h1>Temas</h1>
-  <a class="btn primary" href="#novo">+ Sugerir tema</a>
-</div>
+{% include "_episodes_head.html" %}
 
 <nav class="tabs" aria-label="Filtrar por status">
   {% set open_count = counts.get('ideia', 0) + counts.get('pauta', 0) %}
-  <a href="?status=abertos&ordem={{ ordem }}" class="{{ 'active' if status == 'abertos' }}">Abertos <span>{{ open_count }}</span></a>
+  <a href="?ver=lista&status=abertos&ordem={{ ordem }}" class="{{ 'active' if status == 'abertos' }}">Abertos <span>{{ open_count }}</span></a>
   {% for key, label in STATUSES.items() %}
-  <a href="?status={{ key }}&ordem={{ ordem }}" class="{{ 'active' if status == key }}">{{ label }} <span>{{ counts.get(key, 0) }}</span></a>
+  <a href="?ver=lista&status={{ key }}&ordem={{ ordem }}" class="{{ 'active' if status == key }}">{{ label }} <span>{{ counts.get(key, 0) }}</span></a>
   {% endfor %}
-  <a href="?status=todos&ordem={{ ordem }}" class="{{ 'active' if status == 'todos' }}">Todos</a>
+  <a href="?ver=lista&status=todos&ordem={{ ordem }}" class="{{ 'active' if status == 'todos' }}">Todos</a>
 </nav>
 
 <form class="toolbar" method="get">
+  <input type="hidden" name="ver" value="lista">
   <input type="hidden" name="status" value="{{ status }}">
-  <input type="search" name="q" value="{{ q }}" placeholder="Buscar tema…" aria-label="Buscar tema">
+  <input type="hidden" name="q" value="{{ q }}">
   <select name="ordem" onchange="this.form.submit()" aria-label="Ordenar">
     {% for key, label in sorts.items() %}<option value="{{ key }}" {{ 'selected' if ordem == key }}>{{ label }}</option>{% endfor %}
   </select>
 </form>
 
-{% if rows %}
+{% if themes %}
 <ul class="plain theme-list card">
-  {% for theme, votes in rows %}
-  {% set comment_count = comment_counts.get(theme.id, 0) %}
+  {% for theme in themes %}
+  {% with votes = vote_counts.get(theme.id, 0), comment_count = comment_counts.get(theme.id, 0) %}
   {% include "_theme_row.html" %}
+  {% endwith %}
   {% endfor %}
 </ul>
 {% else %}
-<p class="muted empty">Nenhum tema por aqui.</p>
+<p class="muted empty">Nenhum episódio por aqui.</p>
 {% endif %}
 
-<section class="card" id="novo">
-  <h2>Sugerir tema</h2>
-  <form method="post" action="/temas" class="stack">
-    <label>Título
-      <input name="title" required maxlength="200" placeholder="Ex.: Jogos com traição escondida">
-    </label>
-    <label>Ideia / pauta
-      <textarea name="description" rows="4" placeholder="Por que vale um episódio? Que jogos e assuntos entram?"></textarea>
-    </label>
-    <label>Links <span class="muted">(um por linha)</span>
-      <textarea name="links" rows="2" placeholder="https://ludopedia.com.br/jogo/..."></textarea>
-    </label>
-    <button class="btn primary" type="submit">Sugerir</button>
-  </form>
-</section>
+{% include "_new_episode.html" %}
 {% endblock %}

@@ -1,0 +1,23 @@
+{# shared header for the board and list views; expects ver, segments, quadro, q #}
+<div class="page-head">
+  <h1>Episódios</h1>
+  <div class="actions tight">
+    <a class="btn small" href="/quadros">Quadros</a>
+    <a class="btn small primary" href="#novo">+ Nova ideia</a>
+  </div>
+</div>
+<form class="toolbar" method="get" action="/episodios">
+  <div class="mode-switch" role="tablist" aria-label="Visualização">
+    <a role="tab" href="/episodios?ver=painel" aria-selected="{{ 'true' if ver != 'lista' else 'false' }}">Painel</a>
+    <a role="tab" href="/episodios?ver=lista" aria-selected="{{ 'true' if ver == 'lista' else 'false' }}">Lista</a>
+  </div>
+  <input type="hidden" name="ver" value="{{ ver }}">
+  {% if ver == 'lista' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar…" aria-label="Buscar episódio">
+  {% if segments %}
+  <select name="quadro" onchange="this.form.submit()" aria-label="Filtrar por quadro">
+    <option value="">Todos os quadros</option>
+    {% for s in segments %}<option value="{{ s.id }}" {{ 'selected' if quadro == s.id }}>{{ s.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+</form>

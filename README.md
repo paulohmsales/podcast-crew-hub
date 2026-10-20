@@ -1,7 +1,8 @@
 # Então Ganhei
 
-App do grupo do podcast: **temas** (sugerir, votar, comentar, acompanhar status)
-e **agenda** (rodadas de disponibilidade estilo when2meet, melhores horários,
+App do grupo do podcast: **episódios** num painel kanban (Ideia → Na pauta →
+Agendado → Gravado → Publicado; votos, comentários, quadros, participantes,
+link e data de publicação), **quadros** (os segmentos fixos do podcast) e **agenda** (rodadas de disponibilidade estilo when2meet, melhores horários,
 gravação marcada com convite .ics e atalhos de WhatsApp).
 
 FastAPI + Jinja, SQLite, sem build de frontend.

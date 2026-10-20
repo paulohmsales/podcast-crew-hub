@@ -195,14 +195,19 @@ def book_recording(
 ):
     poll = _poll_or_404(db, poll_id)
     theme = db.get(Theme, int(theme_id)) if theme_id.isdigit() else poll.theme
+    duration = max(15, min(duration_minutes, 600))
     db.add(
         Recording(
             starts_at=starts_at,
-            duration_minutes=max(15, min(duration_minutes, 600)),
+            duration_minutes=duration,
             theme_id=theme.id if theme else None,
             poll_id=poll.id,
         )
     )
+    if theme and not theme.participants:
+        # Start the episode's lineup with whoever is free for the whole recording.
+        free = schedule.free_throughout(poll, starts_at, duration)
+        theme.participants = db.scalars(select(Member).where(Member.id.in_(free))).all() if free else []
     poll.closed = True
     _mark_theme_scheduled(theme)
     db.commit()

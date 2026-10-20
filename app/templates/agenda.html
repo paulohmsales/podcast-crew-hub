@@ -37,7 +37,7 @@
         <label>Quando <input type="datetime-local" name="starts_at" required step="900"></label>
         <label>Duração (min) <input type="number" name="duration_minutes" value="90" min="15" max="600" step="15"></label>
       </div>
-      <label>Tema
+      <label>Episódio
         <select name="theme_id">
           <option value="">— a definir —</option>
           {% for t in themes %}<option value="{{ t.id }}">{{ t.title }}</option>{% endfor %}
