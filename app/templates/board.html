@@ -14,7 +14,7 @@
     </header>
     <ol class="cards" data-drop>
       {% for t in items %}
-      <li class="ep-card" draggable="true" data-id="{{ t.id }}">
+      <li class="ep-card" data-id="{{ t.id }}">
         <a class="ep-title" href="/episodios/{{ t.id }}">
           {% if t.number %}<span class="ep-num">#{{ t.number }}</span>{% endif %}{{ t.title }}
         </a>
@@ -35,23 +35,16 @@
         </div>
         {% endif %}
         <div class="ep-foot">
-          {% if col in ('ideia', 'pauta') %}
           <form method="post" action="/episodios/{{ t.id }}/voto" class="inline">
             <button class="vote-chip {{ 'on' if t.id in my_votes }}" aria-pressed="{{ 'true' if t.id in my_votes else 'false' }}"
-                    title="{{ 'Tirar meu voto' if t.id in my_votes else 'Quero gravar esse' }}">▲ {{ vote_counts.get(t.id, 0) }}</button>
+                    title="{{ 'Tirar meu voto' if t.id in my_votes else 'Votar' }}">▲ {{ vote_counts.get(t.id, 0) }}</button>
           </form>
-          {% elif col == 'agendado' and upcoming.get(t.id) %}
+          {% if col == 'agendado' and upcoming.get(t.id) %}
           <span class="muted small">🎙️ {{ fmt_slot(upcoming[t.id]) }}</span>
-          {% elif t.published_on %}
+          {% elif t.published_on and col in ('gravado', 'publicado') %}
           <span class="muted small">{{ fmt_day(t.published_on) }}/{{ t.published_on.year }}</span>
           {% endif %}
           {% if t.episode_url %}<a class="listen" href="{{ t.episode_url }}" target="_blank" rel="noopener">▶ Ouvir</a>{% endif %}
-          <form method="post" action="/episodios/{{ t.id }}/status" class="move">
-            <label class="sr-only" for="mv{{ t.id }}">Mover {{ t.title }}</label>
-            <select id="mv{{ t.id }}" name="status" onchange="this.form.submit()" title="Mover para">
-              {% for key, label in STATUSES.items() %}<option value="{{ key }}" {{ 'selected' if key == col }}>{{ '→ ' ~ label if key != col else label }}</option>{% endfor %}
-            </select>
-          </form>
         </div>
       </li>
       {% endfor %}
@@ -61,10 +54,10 @@
   {% endfor %}
 </div>
 
-<p class="board-foot small">
+<p class="board-foot small"><span class="muted">Arraste os cards para mudar de coluna (no celular, segure e arraste). </span>
   {% if descartados %}<a href="/episodios?ver=painel">Esconder descartados</a>{% else %}<a href="/episodios?ver=painel&descartados=1">Mostrar descartados</a>{% endif %}
 </p>
 
 {% endblock %}
 
-{% block scripts %}<script src="/static/board.js?v=1" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/board.js?v=3" defer></script>{% endblock %}

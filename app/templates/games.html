@@ -4,6 +4,7 @@
 <h1>Jogos</h1>
 {% if not ready %}{% include "_ludopedia_setup.html" %}{% endif %}
 
+<div class="games-search">
 <form class="toolbar" method="get" action="/jogos" role="search">
   <input type="search" name="q" value="{{ q }}" placeholder="Nome do jogo…" aria-label="Nome do jogo">
   {% if mechanics %}
@@ -14,7 +15,8 @@
   {% endif %}
   <button class="btn primary">Buscar</button>
 </form>
-<p class="muted small">Busque pelo nome, por uma mecânica (ex.: Alocação de Trabalhadores, Dedução) ou os dois. Os mais populares na Ludopedia aparecem primeiro.</p>
+</div>
+<p class="muted small search-hint">Busque pelo nome, por uma mecânica (ex.: Dedução) ou os dois. Os mais populares aparecem primeiro.</p>
 
 {% if error %}<p class="card callout error" role="alert">{{ error }}</p>{% endif %}
 

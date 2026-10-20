@@ -108,14 +108,15 @@ def episodes(
     by_status: dict[str, list[Theme]] = {c: [] for c in columns}
     for theme in db.scalars(stmt.where(Theme.status.in_(columns))).all():
         by_status[theme.status].append(theme)
-    far = datetime.max
-    for col, items in by_status.items():
-        if col in ("ideia", "pauta"):
-            items.sort(key=lambda t: (-votes.get(t.id, 0), -t.created_at.timestamp()))
-        elif col == "agendado":
-            items.sort(key=lambda t: upcoming.get(t.id, far))
-        else:  # newest first
-            items.sort(key=lambda t: (t.published_on or date.min, t.number or 0, t.updated_at), reverse=True)
+    # Most voted first in every column; ties go to the next recording, then the newest.
+    def tiebreak(t: Theme) -> float:
+        if t.id in upcoming:
+            return -upcoming[t.id].timestamp()
+        when = t.published_on or t.created_at.date()
+        return datetime.combine(when, datetime.min.time()).timestamp()
+
+    for items in by_status.values():
+        items.sort(key=lambda t: (-votes.get(t.id, 0), -tiebreak(t)))
     return render(
         request, "board.html", me,
         columns=columns, by_status=by_status, upcoming=upcoming, descartados=descartados, **common,

@@ -7,6 +7,8 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
 os.environ["DATA_DIR"] = f"{_tmp}/data"
 os.environ.pop("LUDOPEDIA_TOKEN", None)
 
+from datetime import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -35,7 +37,7 @@ def db():
 def _member(db, name, admin=False):
     member = Member(
         name=name, email=f"{name.lower()}@ex.com",
-        password_hash=auth.hash_password(PASSWORD), is_admin=admin,
+        password_hash=auth.hash_password(PASSWORD), is_admin=admin, tutorial_seen_at=datetime.now(),
     )
     db.add(member)
     db.commit()

@@ -86,3 +86,34 @@ def test_old_theme_urls_redirect(client):
     res = client.get("/temas/5", follow_redirects=False)
     assert res.status_code == 301 and res.headers["location"] == "/episodios/5"
     assert client.get("/temas", follow_redirects=False).headers["location"] == "/episodios"
+
+
+def test_first_visit_shows_tutorial_once(client, db):
+    from app.models import Member
+
+    client.post("/membros", data={"name": "Novo", "email": "novo@ex.com"})
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    c = TestClient(app)
+    c.post("/entrar", data={"email": "novo@ex.com", "password": "senha-nova-1"})
+    res = c.get("/", follow_redirects=False)
+    assert res.headers["location"] == "/bem-vindo"
+    assert "Bem-vindo, Novo" in c.get("/bem-vindo").text
+    c.post("/bem-vindo/concluir")
+    assert c.get("/", follow_redirects=False).status_code == 200
+    assert db.query(Member).filter_by(name="Novo").one().tutorial_seen_at is not None
+    assert "Como funciona" in c.get("/membros").text
+
+
+def test_every_column_sorted_by_votes(client, ana_client, db):
+    a = _new(client, "Pouco votado")
+    b = _new(client, "Muito votado")
+    for t in (a, b):
+        client.post(f"/episodios/{t}/status", data={"status": "publicado"})
+    client.post(f"/episodios/{a}/voto")  # remove Paulo's automatic vote
+    ana_client.post(f"/episodios/{b}/voto")  # b: Paulo + Ana
+    page = client.get("/episodios").text
+    assert page.index("Muito votado") < page.index("Pouco votado")
+    assert 'class="move"' not in page

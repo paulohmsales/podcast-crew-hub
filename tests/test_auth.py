@@ -34,7 +34,7 @@ def test_first_access_sets_password(client, db):
     # too short: refused, still no password
     assert "Primeiro acesso" in _login("caio@ex.com", "curta")[1].text
     c, res = _login("caio@ex.com", "minha-senha")
-    assert res.status_code == 303 and "Oi, Caio" in c.get("/").text
+    assert res.status_code == 303 and "Bem-vindo, Caio" in c.get("/").text  # first visit: tutorial
     # from now on only that password works
     assert "Senha incorreta" in _login("caio@ex.com", "outra-senha")[1].text
     assert _login("caio@ex.com", "minha-senha")[1].status_code == 303

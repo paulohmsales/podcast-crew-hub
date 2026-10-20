@@ -34,8 +34,23 @@ def healthz():
     return {"ok": True}
 
 
+@app.get("/bem-vindo")
+def tutorial(request: Request, me: Member = Depends(current_member)):
+    return render(request, "tutorial.html", me)
+
+
+@app.post("/bem-vindo/concluir")
+def tutorial_done(me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    if not me.tutorial_seen_at:
+        me.tutorial_seen_at = datetime.now()
+        db.commit()
+    return RedirectResponse("/episodios", status_code=303)
+
+
 @app.get("/")
 def home(request: Request, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    if not me.tutorial_seen_at:
+        return RedirectResponse("/bem-vindo", status_code=303)
     now = datetime.now()
     upcoming = db.scalars(
         select(Recording).where(Recording.starts_at >= now.replace(hour=0, minute=0)).order_by(Recording.starts_at).limit(3)
