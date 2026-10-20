@@ -1,14 +1,14 @@
 #!/bin/bash
-# Ship the working tree to the VPS, build the image there and roll the stack.
+# Ship the committed HEAD to the VPS, build the image there and roll the stack.
 # Run from the repo root on your machine:  deploy/deploy.sh
 set -euo pipefail
 HOST=${DEPLOY_HOST:-jobz-vps}
 DIR=/opt/entaoganhei/src
-REV=$(git rev-parse --short HEAD)$(git diff --quiet HEAD || echo "-dirty")
+REV=$(git rev-parse --short HEAD)
+git diff --quiet HEAD || echo "! uncommitted changes are NOT deployed"
 
 echo "→ syncing $REV to $HOST:$DIR"
-ssh "$HOST" "mkdir -p $DIR /opt/entaoganhei/backups"
-rsync -az --delete --exclude .git --exclude .venv --exclude '*.db*' --exclude __pycache__ ./ "$HOST:$DIR/"
+git archive --format=tar HEAD | ssh "$HOST" "rm -rf $DIR && mkdir -p $DIR /opt/entaoganhei/backups && tar -x -C $DIR"
 
 ssh "$HOST" bash -s -- "$REV" <<'REMOTE'
 set -euo pipefail
