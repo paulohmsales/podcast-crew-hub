@@ -15,6 +15,7 @@ from app.models import Member
 from app.web import COOKIE
 
 PASSWORD = "senha-forte-123"
+REAL_SEND = mail.send  # the autouse outbox fixture replaces it
 
 
 @pytest.fixture(autouse=True)
