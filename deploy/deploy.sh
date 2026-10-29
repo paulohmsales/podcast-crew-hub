@@ -16,8 +16,10 @@ REV=$1
 cd /opt/entaoganhei/src
 echo "→ building $REV"
 docker build -q -f deploy/Dockerfile -t entaoganhei:latest -t "entaoganhei:$REV" . >/dev/null
+set -a; . /opt/entaoganhei/.env; set +a  # DOMAIN for stack.yml
+: "${DOMAIN:?set DOMAIN=<hostname> in /opt/entaoganhei/.env}"
 docker stack deploy -q --resolve-image never -c deploy/stack.yml entaoganhei
 docker service update -q --image "entaoganhei:$REV" entaoganhei_web >/dev/null
 docker image prune -f --filter "until=168h" >/dev/null 2>&1 || true
+echo "✓ deployed $REV → https://$DOMAIN"
 REMOTE
-echo "✓ deployed $REV → https://podcast.example.com"

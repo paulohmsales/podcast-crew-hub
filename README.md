@@ -57,7 +57,7 @@ por email.
 
 ## Produção (VPS)
 
-https://podcast.example.com — serviço Swarm `entaoganhei_web` atrás
+Serviço Swarm `entaoganhei_web` atrás
 do Traefik; banco SQLite no volume `entaoganhei_data`.
 
     deploy/deploy.sh          # rsync → build no VPS → stack deploy (migrações rodam no start)

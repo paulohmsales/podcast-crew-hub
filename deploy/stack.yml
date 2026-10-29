@@ -1,15 +1,15 @@
 # Então Ganhei on the VPS's Docker Swarm, behind Traefik (Let's Encrypt).
-#   https://podcast.example.com
-# Deployed by deploy/deploy.sh (image built on the VPS).
+# The public hostname comes from DOMAIN in /opt/entaoganhei/.env on the VPS;
+# deploy/deploy.sh exports it before `docker stack deploy` fills ${DOMAIN} in.
 version: "3.8"
 services:
   web:
     image: entaoganhei:latest
-    env_file: /opt/entaoganhei/.env  # LUDOPEDIA_TOKEN, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+    env_file: /opt/entaoganhei/.env  # DOMAIN, LUDOPEDIA_TOKEN, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
     environment:
       DATABASE_URL: sqlite:////data/entao-ganhei.db
       DATA_DIR: /data
-      BASE_URL: https://podcast.example.com
+      BASE_URL: https://${DOMAIN}
     volumes:
       - entaoganhei_data:/data
     networks: [network_swarm_public]
@@ -23,7 +23,7 @@ services:
       labels:
         - traefik.enable=true
         - traefik.docker.network=network_swarm_public
-        - traefik.http.routers.entaoganhei.rule=Host(`podcast.example.com`)
+        - traefik.http.routers.entaoganhei.rule=Host(`${DOMAIN}`)
         - traefik.http.routers.entaoganhei.entrypoints=websecure
         - traefik.http.routers.entaoganhei.tls.certresolver=letsencryptresolver
         - traefik.http.services.entaoganhei.loadbalancer.server.port=8000
