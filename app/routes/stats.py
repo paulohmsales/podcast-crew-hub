@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import THEME_STATUSES, Member, Theme
+from app.models import THEME_STATUSES, Member, Segment, Theme
 from app.schedule import MONTHS
 from app.web import current_member, render
 
@@ -49,12 +49,23 @@ def stats(
         months = _months(published[0].published_on, max(published[-1].published_on, date.today()))
     else:
         months = []
-    per_month = Counter((t.published_on.year, t.published_on.month) for t in published)
-    monthly = [
-        {"label": f"{MONTHS[m - 1]}/{str(y)[2:]}", "short": MONTHS[m - 1][0].upper() if ano else MONTHS[m - 1],
-         "year": y, "first_of_year": m == 1, "count": per_month.get((y, m), 0)}
-        for y, m in months
-    ]
+    # Each month's bar is split by quadro. An episode counts once, under its first quadro
+    # (by the quadros' order), so the bar's height is still the number of episodes.
+    per_month: dict[tuple[int, int], Counter] = {}
+    month_quadros: dict[int | None, Segment | None] = {}
+    for t in published:
+        seg = t.segments[0] if t.segments else None
+        month_quadros[seg.id if seg else None] = seg
+        per_month.setdefault((t.published_on.year, t.published_on.month), Counter())[seg.id if seg else None] += 1
+    legend = sorted(month_quadros.values(), key=lambda s: (s is None, s.position if s else 0, s.name if s else ""))
+    monthly = []
+    for y, m in months:
+        counts = per_month.get((y, m), Counter())
+        monthly.append({
+            "label": f"{MONTHS[m - 1]}/{str(y)[2:]}", "short": MONTHS[m - 1][0].upper() if ano else MONTHS[m - 1],
+            "year": y, "first_of_year": m == 1, "count": sum(counts.values()),
+            "parts": [(s, counts[s.id if s else None]) for s in legend if counts[s.id if s else None]],
+        })
 
     days = [b.published_on - a.published_on for a, b in zip(published, published[1:])]
     last = all_published[-1].published_on if all_published else None
@@ -87,7 +98,7 @@ def stats(
 
     return render(
         request, "stats.html", me,
-        ano=ano, years=years, kpis=kpis, monthly=monthly,
+        ano=ano, years=years, kpis=kpis, monthly=monthly, legend=legend,
         month_max=max((r["count"] for r in monthly), default=0),
         by_segment=[(segs[i], n) for i, n in seg_counts.most_common()],
         by_member=[(members[i], n) for i, n in people.most_common()],

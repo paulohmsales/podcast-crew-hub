@@ -139,9 +139,11 @@ def test_numbers_page(client, db, paulo, ana):
         client.post(f"/episodios/{t}/status", data={"status": "publicado"})
     _new(client, "Ideia solta")
     page = client.get("/numeros").text
-    assert "Lançamentos por mês" in page and 'data-tip="abr/25: 1 episódio"' in page and 'data-tip="mar/25' not in page
+    assert "Lançamentos por mês" in page and 'data-tip="abr/25: 1 episódio' in page and 'data-tip="mar/25' not in page
     assert "Jogo da Semana" in page and "Quem mais gravou" in page and "Funil de episódios" in page
     assert '<a href="/numeros?ano=2025"' in page
+    assert 'data-tip="abr/25: 1 episódio · Jogo da Semana 1"' in page  # the bar is split by quadro
+    assert f'col-part seg-c{(seg.id - 1) % 8 + 1}' in page and 'class="chart-legend"' in page
     page = client.get("/numeros?ano=2025").text
     assert "Episódios no ar em 2025</span><strong>2</strong>" in page
     assert 'data-tip="dez/25: 0 episódios"' in page and "jan/26" not in page

@@ -24,11 +24,19 @@
 <section class="card">
   <h2>Lançamentos por mês</h2>
   {% if monthly %}
-  <div class="cols-chart" role="img" aria-label="Episódios publicados por mês">
+  {% if legend %}
+  <ul class="chart-legend" aria-label="Quadros">
+    {% for q in legend %}<li><span class="swatch {{ seg_color(q) if q else 'no-seg' }}"></span>{{ q.name if q else 'Sem quadro' }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <div class="cols-chart" role="img" aria-label="Episódios publicados por mês, por quadro">
     <div class="cols-plot">
       {% for r in monthly %}
-      <div class="col-slot {{ 'year-start' if r.first_of_year and not loop.first }}" tabindex="0" data-tip="{{ r.label }}: {{ r.count }} episódio{{ 's' if r.count != 1 }}">
-        <div class="col-bar" style="height: {{ (r.count / month_max * 100) if month_max else 0 }}%"></div>
+      <div class="col-slot {{ 'year-start' if r.first_of_year and not loop.first }}" tabindex="0"
+           data-tip="{{ r.label }}: {{ r.count }} episódio{{ 's' if r.count != 1 }}{% for q, n in r.parts %} · {{ q.name if q else 'Sem quadro' }} {{ n }}{% endfor %}">
+        <div class="col-bar stacked" style="height: {{ (r.count / month_max * 100) if month_max else 0 }}%">
+          {% for q, n in r.parts %}<span class="col-part {{ seg_color(q) if q else 'no-seg' }}" style="flex: {{ n }}"></span>{% endfor %}
+        </div>
       </div>
       {% endfor %}
     </div>
@@ -36,11 +44,12 @@
       {% for r in monthly %}<span>{% if ano or monthly|length <= 14 or (loop.index0 % 3 == 0) %}{{ r.short if ano else r.label }}{% endif %}</span>{% endfor %}
     </div>
   </div>
-  <p class="muted small chart-note">Maior mês: {{ month_max }} episódio{{ 's' if month_max != 1 }}. Passe o mouse (ou toque) numa barra para ver o mês.</p>
+  <p class="muted small chart-note">Maior mês: {{ month_max }} episódio{{ 's' if month_max != 1 }}. Cada episódio conta no seu primeiro quadro. Passe o mouse (ou toque) numa barra para ver o mês.</p>
   <details class="data-table">
     <summary class="link-btn">ver tabela</summary>
-    <table><thead><tr><th>Mês</th><th>Episódios</th></tr></thead>
-      <tbody>{% for r in monthly %}<tr><td>{{ r.label }}</td><td>{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+    <table><thead><tr><th>Mês</th><th>Episódios</th><th>Por quadro</th></tr></thead>
+      <tbody>{% for r in monthly %}<tr><td>{{ r.label }}</td><td>{{ r.count }}</td>
+        <td>{% for q, n in r.parts %}{{ q.name if q else 'Sem quadro' }} {{ n }}{{ ', ' if not loop.last }}{% endfor %}</td></tr>{% endfor %}</tbody></table>
   </details>
   {% else %}
   <p class="muted">Nenhum episódio publicado com data ainda. Marque a data em que foi ao ar em ✎ Editar.</p>

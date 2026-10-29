@@ -557,3 +557,11 @@ a.hb-label:hover { text-decoration: underline; }
 .toolbar input[type=search] { flex: 1 1 8rem; min-width: 8rem; }
 .kpi { align-content: start; }
 .hb-bar.zero { min-width: 0; }
+/* Stacked month bars: one block per quadro, a 2px surface gap between blocks. */
+.col-bar.stacked { display: flex; flex-direction: column-reverse; gap: 2px; background: none; overflow: hidden; }
+.col-part { display: block; min-height: 3px; background: var(--seg); }
+.col-part:last-child { border-radius: 4px 4px 0 0; }
+.no-seg { --seg: var(--muted); }
+.chart-legend { list-style: none; margin: 0.25rem 0 0.5rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.85rem; }
+.chart-legend li { display: inline-flex; align-items: center; gap: 0.35rem; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--seg); flex: none; }
