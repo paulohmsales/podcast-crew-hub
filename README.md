@@ -1,3 +1,34 @@
+# podcast-crew-hub
+
+A small web app a podcast crew uses to run their show, from the first episode idea
+to the published episode. It was built for **Então Ganhei**, a Brazilian board-game
+podcast with seven hosts who used to coordinate everything over WhatsApp. It runs in
+production for them, so the UI is in Portuguese.
+
+**What it does**
+
+- **Episode pipeline:** a kanban board (Idea → On the agenda → Scheduled → Recorded →
+  Published) with drag and drop that works with a mouse and on touch screens. Members
+  vote on ideas, the cards show the segment colors, host photos and a listen link,
+  and each column scrolls on its own.
+- **Episode page:** a summary, a shared script that saves on its own (server-side
+  diff-match-patch merge, version history and restore, a "someone is editing"
+  indicator), the games covered, comments and a change history.
+- **Scheduling:** when2meet-style availability polls, the best time slots, an .ics
+  invite and WhatsApp share links.
+- **Games:** search the Ludopedia catalog by name or mechanic and see which
+  episodes covered each game.
+- **Numbers:** a BI page with releases per month, episodes per segment, who
+  recorded most, the most-discussed games and the episode funnel, filterable by year.
+- **Onboarding:** a photo step and a help popup that opens on each new visit until a
+  member turns it off; it's always one click away afterwards.
+
+**Stack:** FastAPI, Jinja templates, SQLAlchemy and Alembic on SQLite, with plain JS
+and CSS (no frontend build). It's deployed as a Docker Swarm service behind Traefik
+on a single VPS, with daily backups. Tests use pytest.
+
+---
+
 # Então Ganhei
 
 App do grupo do podcast: **episódios** num painel kanban (Ideia → Na pauta →
