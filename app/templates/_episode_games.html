@@ -1,0 +1,19 @@
+{# expects theme #}
+{% if theme.games %}
+<ul class="plain game-list">
+  {% for g in theme.games %}
+  <li class="game-item">
+    <a class="game-row" href="/jogos/{{ g.id }}">
+      {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
+      <span><strong>{{ g.name }}</strong><br>{% include "_game_meta.html" %}
+        {% if g.mechanic_list %}<br><span class="muted small">{{ g.mechanic_list[:4] | join(', ') }}</span>{% endif %}</span>
+    </a>
+    <form method="post" action="/episodios/{{ theme.id }}/jogos/{{ g.id }}/remover" class="inline game-remove">
+      <button class="link-btn" aria-label="Tirar {{ g.name }} do episódio">tirar</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">Nenhum jogo ainda.</p>
+{% endif %}

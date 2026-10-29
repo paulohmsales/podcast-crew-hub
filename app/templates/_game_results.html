@@ -1,0 +1,22 @@
+{# expects theme, jogo, game_results, attached, error #}
+{% if jogo and game_results %}
+<ul class="plain game-list results">
+  {% for g in game_results %}
+  <li class="game-item">
+    <span class="game-row">
+      {% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="40" height="40" loading="lazy">{% else %}<span class="thumb-ph"></span>{% endif %}
+      <span><strong>{{ g.name }}</strong>{% if g.original_name and g.original_name != g.name %}<span class="muted small"> · {{ g.original_name }}</span>{% endif %}</span>
+    </span>
+    {% if g.id in attached %}<span class="muted small">adicionado</span>{% else %}
+    <form method="post" action="/episodios/{{ theme.id }}/jogos" class="inline game-add">
+      <input type="hidden" name="game_id" value="{{ g.id }}">
+      <button class="btn small primary">Adicionar</button>
+    </form>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% elif jogo and search_error %}
+<p class="error small" role="alert">{{ search_error }}</p>
+{% elif jogo %}
+<p class="muted">Nada encontrado para "{{ jogo }}".</p>
+{% endif %}

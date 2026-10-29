@@ -376,7 +376,10 @@ img.logo { object-fit: cover; border-radius: 22%; }
 a.game-row:hover strong { text-decoration: underline; }
 .game-row img, .thumb-ph { flex: none; width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: var(--surface-2); }
 .results .game-row img, .results .thumb-ph { width: 40px; height: 40px; }
-.game-search { margin: 0.75rem 0 0.25rem; }
+.game-search { margin: 0 0 0.5rem; }
+#game-results { transition: opacity 0.15s; }
+#game-results.loading { opacity: 0.5; }
+.game-list-title { font-size: 1rem; margin: 0.75rem 0 0.25rem; }
 .game-head { display: flex; gap: 1rem; align-items: flex-start; }
 .game-head .cover { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; flex: none; }
 .small-h { font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0.35rem; }

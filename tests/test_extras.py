@@ -168,3 +168,17 @@ def test_spotify_needs_credentials(monkeypatch):
     monkeypatch.delenv("SPOTIFY_CLIENT_ID", raising=False)
     with pytest.raises(feed.FeedError, match="SPOTIFY_CLIENT_ID"):
         feed.load("https://open.spotify.com/show/6qpGRBoKE0KOMPsnUcDGYR")
+
+
+def test_add_games_without_reloading(client, db, fake_ludopedia):
+    res = client.post("/episodios", data={"title": "Euros"})
+    t = int(res.url.path.rsplit("/", 1)[1])
+    page = client.get(f"/episodios/{t}?aba=jogos").text
+    assert page.index('class="toolbar game-search"') < page.index('id="episode-games"')  # search sits above the list
+    fragment = client.get(f"/episodios/{t}/jogos/busca?jogo=terra").text
+    assert "<html" not in fragment and 'name="game_id" value="404"' in fragment
+    res = client.post(f"/episodios/{t}/jogos", data={"game_id": "404"}, headers={"X-Requested-With": "fetch"})
+    assert res.status_code == 200 and res.headers["X-Games-Count"] == "1" and "Terra Mystica" in res.text
+    assert "adicionado" in client.get(f"/episodios/{t}/jogos/busca?jogo=terra").text
+    res = client.post(f"/episodios/{t}/jogos/404/remover", headers={"X-Requested-With": "fetch"})
+    assert res.headers["X-Games-Count"] == "0" and "Nenhum jogo ainda" in res.text

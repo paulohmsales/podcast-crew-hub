@@ -220,12 +220,7 @@ def show_theme(
         error=erro,
     )
     if tab == "jogos":
-        ctx.update(jogo=jogo, game_results=[], attached={g.id for g in theme.games}, ludopedia_ready=ludopedia.configured())
-        if jogo.strip():
-            try:
-                ctx["game_results"], _ = ludopedia.search(jogo)
-            except ludopedia.LudopediaError as e:
-                ctx["error"] = str(e)
+        ctx.update(_game_search(theme, jogo), ludopedia_ready=ludopedia.configured())
     elif tab == "historico":
         ctx["events"] = db.scalars(
             select(ThemeEvent).where(ThemeEvent.theme_id == theme.id).order_by(ThemeEvent.created_at.desc())
@@ -361,30 +356,71 @@ def restore_script(theme_id: int, revision_id: int, me: Member = Depends(current
 # --- games --------------------------------------------------------------------
 
 
+def _game_search(theme: Theme, jogo: str) -> dict:
+    ctx = dict(theme=theme, jogo=jogo, game_results=[], attached={g.id for g in theme.games}, search_error="")
+    if jogo.strip():
+        try:
+            ctx["game_results"], _ = ludopedia.search(jogo)
+        except ludopedia.LudopediaError as e:
+            ctx["search_error"] = str(e)
+    return ctx
+
+
+def _from_script(request: Request) -> bool:
+    # games.js adds and removes without reloading, so the search box keeps its text and focus
+    return request.headers.get("x-requested-with") == "fetch"
+
+
+def _episode_games(request: Request, theme: Theme, me: Member):
+    res = render(request, "_episode_games.html", me, theme=theme)
+    res.headers["X-Games-Count"] = str(len(theme.games))
+    return res
+
+
+@router.get("/{theme_id}/jogos/busca")
+def search_games(
+    theme_id: int, request: Request, jogo: str = "", me: Member = Depends(current_member), db: Session = Depends(get_db)
+):
+    """The search results alone, fetched as the member types."""
+    return render(request, "_game_results.html", me, **_game_search(_theme_or_404(db, theme_id), jogo))
+
+
 @router.post("/{theme_id}/jogos")
 def add_game(
-    theme_id: int, game_id: int = Form(...), me: Member = Depends(current_member), db: Session = Depends(get_db)
+    theme_id: int,
+    request: Request,
+    game_id: int = Form(...),
+    me: Member = Depends(current_member),
+    db: Session = Depends(get_db),
 ):
     theme = _theme_or_404(db, theme_id)
     try:
         game = ludopedia.get_game(db, game_id)
     except ludopedia.LudopediaError as e:
+        if _from_script(request):
+            return PlainTextResponse(str(e), status_code=502)
         return RedirectResponse(_ep_url(theme_id, "jogos", erro=str(e)), status_code=303)
     if game not in theme.games:
         theme.games.append(game)
         history.log(db, theme, me, "jogo", f"adicionou o jogo {game.name}")
         db.commit()
+    if _from_script(request):
+        return _episode_games(request, theme, me)
     return RedirectResponse(_ep_url(theme_id, "jogos"), status_code=303)
 
 
 @router.post("/{theme_id}/jogos/{game_id}/remover")
-def remove_game(theme_id: int, game_id: int, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+def remove_game(
+    theme_id: int, game_id: int, request: Request, me: Member = Depends(current_member), db: Session = Depends(get_db)
+):
     theme = _theme_or_404(db, theme_id)
     removed = [g for g in theme.games if g.id == game_id]
     if removed:
         theme.games = [g for g in theme.games if g.id != game_id]
         history.log(db, theme, me, "jogo", f"tirou o jogo {removed[0].name}")
         db.commit()
+    if _from_script(request):
+        return _episode_games(request, theme, me)
     return RedirectResponse(_ep_url(theme_id, "jogos"), status_code=303)
 
 
