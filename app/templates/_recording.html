@@ -17,6 +17,6 @@
     {% if r.theme and r.theme.status in ('ideia', 'pauta', 'agendado') %}
     <form method="post" action="/agenda/gravacoes/{{ r.id }}/gravado" class="inline"><button class="btn small">✓ Gravado</button></form>
     {% endif %}
-    <form method="post" action="/agenda/gravacoes/{{ r.id }}/excluir" class="inline" onsubmit="return confirm('Desmarcar essa gravação?')"><button class="link-btn">desmarcar</button></form>
+    <form method="post" action="/agenda/gravacoes/{{ r.id }}/excluir" class="inline" onsubmit="return confirm('Desmarcar essa gravação?')"><button class="icon-btn" title="Desmarcar gravação" aria-label="Desmarcar gravação">{{ icon("calendar-x") }}</button></form>
   </div>
 </li>

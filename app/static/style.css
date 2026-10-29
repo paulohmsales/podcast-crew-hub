@@ -112,8 +112,15 @@ ul.plain, ol.windows { list-style: none; margin: 0; padding: 0; }
 .btn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
 .btn.danger { color: var(--danger); }
 .btn.whatsapp { color: var(--whatsapp); border-color: currentColor; background: transparent; }
-.link-btn { background: none; border: 0; padding: 0.25rem; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 0.85rem; }
+/* text action with an icon in front; quiet until hovered */
+.link-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: none; border: 0; border-radius: 999px; padding: 0.3rem 0.6rem;
+  color: var(--muted); cursor: pointer; font: inherit; font-size: 0.85rem; text-decoration: none;
+}
+.link-btn:hover { background: var(--surface-2); color: var(--text); }
 .link-btn.danger { color: var(--danger); }
+.link-btn.danger:hover { color: var(--danger); }
 summary { list-style: none; cursor: pointer; width: fit-content; }
 summary::-webkit-details-marker { display: none; }
 details[open] > summary { margin-bottom: 0.75rem; }
@@ -362,8 +369,17 @@ label.check.pick:has(input:checked) { border-color: var(--brand); background: co
 .segments > li:last-child { border-bottom: 0; }
 .seg-row { display: flex; align-items: center; gap: 0.75rem; }
 .seg-order { display: flex; flex-direction: column; }
-.icon-btn { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.3rem; line-height: 1; }
+/* icon-only button; the label lives in title / aria-label */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px;
+  background: none; color: var(--muted); cursor: pointer; line-height: 1;
+}
+.icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.icon-btn.danger:hover { color: var(--danger); }
 .icon-btn:disabled { opacity: 0.3; cursor: default; }
+.seg-order .icon-btn { width: 26px; height: 20px; }
+.icon { flex: none; }
 
 /* --- games & logo ------------------------------------------------------------ */
 img.logo { object-fit: cover; border-radius: 22%; }

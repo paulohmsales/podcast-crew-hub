@@ -16,9 +16,9 @@
       <div class="seg-row">
         <div class="seg-order">
           <form method="post" action="/quadros/{{ s.id }}/mover" class="inline"><input type="hidden" name="direcao" value="cima">
-            <button class="icon-btn" {{ 'disabled' if loop.first }} aria-label="Subir {{ s.name }}">▲</button></form>
+            <button class="icon-btn" {{ 'disabled' if loop.first }} aria-label="Subir {{ s.name }}">{{ icon("chevron-up", 14) }}</button></form>
           <form method="post" action="/quadros/{{ s.id }}/mover" class="inline"><input type="hidden" name="direcao" value="baixo">
-            <button class="icon-btn" {{ 'disabled' if loop.last }} aria-label="Descer {{ s.name }}">▼</button></form>
+            <button class="icon-btn" {{ 'disabled' if loop.last }} aria-label="Descer {{ s.name }}">{{ icon("chevron-down", 14) }}</button></form>
         </div>
         <div class="grow">
           <a href="/episodios?ver=lista&status=todos&quadro={{ s.id }}"><strong>{{ s.name }}</strong></a>
@@ -27,7 +27,7 @@
         </div>
       </div>
       <details>
-        <summary class="link-btn">editar</summary>
+        <summary class="icon-btn" title="Editar" aria-label="Editar {{ s.name }}">{{ icon("pencil") }}</summary>
         <form method="post" action="/quadros/{{ s.id }}/editar" class="stack">
           <label>Nome <input name="name" value="{{ s.name }}" required maxlength="80"></label>
           <label>Descrição <input name="description" value="{{ s.description }}"></label>
@@ -35,7 +35,7 @@
             <button class="btn small primary">Salvar</button>
           </div>
         </form>
-        <form method="post" action="/quadros/{{ s.id }}/arquivar" class="inline"><button class="link-btn">arquivar</button></form>
+        <form method="post" action="/quadros/{{ s.id }}/arquivar" class="inline"><button class="link-btn">{{ icon("archive") }} Arquivar</button></form>
       </details>
     </li>
     {% endfor %}
@@ -63,7 +63,7 @@
     {% for s in archived %}
     <li class="seg-row">
       <span class="grow muted">{{ s.name }} · {{ counts.get(s.id, 0) }} episódio{{ 's' if counts.get(s.id, 0) != 1 }}</span>
-      <form method="post" action="/quadros/{{ s.id }}/arquivar" class="inline"><button class="link-btn">reativar</button></form>
+      <form method="post" action="/quadros/{{ s.id }}/arquivar" class="inline"><button class="link-btn">{{ icon("undo") }} Reativar</button></form>
     </li>
     {% endfor %}
   </ul>

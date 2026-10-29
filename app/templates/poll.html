@@ -140,7 +140,7 @@
   <form method="post" action="/agenda/{{ poll.id }}/fechar" class="inline"><button class="btn small">Fechar sem marcar</button></form>
   {% endif %}
   {% if me.is_admin or poll.created_by_id == me.id %}
-  <form method="post" action="/agenda/{{ poll.id }}/excluir" class="inline" onsubmit="return confirm('Excluir essa rodada e as respostas?')"><button class="link-btn danger">excluir rodada</button></form>
+  <form method="post" action="/agenda/{{ poll.id }}/excluir" class="inline" onsubmit="return confirm('Excluir essa rodada e as respostas?')"><button class="link-btn danger">{{ icon("trash") }} Excluir rodada</button></form>
   {% endif %}
 </section>
 {% endblock %}

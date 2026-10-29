@@ -12,7 +12,7 @@
   {% include "_photo_form.html" %}
   {% if me.photo %}
   <form method="post" action="/conta/foto/remover" class="footer-actions" onsubmit="return confirm('Remover sua foto?')">
-    <button class="link-btn">remover foto</button>
+    <button class="link-btn">{{ icon("trash") }} Remover foto</button>
   </form>
   {% endif %}
 </section>

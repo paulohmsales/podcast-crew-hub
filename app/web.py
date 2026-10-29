@@ -10,6 +10,7 @@ from markupsafe import Markup, escape
 from sqlalchemy.orm import Session
 
 from app import auth, branding, photos, schedule
+from app.icons import icon
 from app.db import get_db
 from app.models import THEME_STATUSES, Member
 
@@ -51,7 +52,7 @@ def seg_color(segment) -> str:
     return f"seg-c{(segment.id - 1) % SEGMENT_COLORS + 1}"
 
 
-templates.env.globals.update(whatsapp_url=whatsapp_url, logo_url=branding.logo_url, avatar=avatar, seg_color=seg_color)
+templates.env.globals.update(icon=icon, whatsapp_url=whatsapp_url, logo_url=branding.logo_url, avatar=avatar, seg_color=seg_color)
 
 
 class LoginRequired(Exception):

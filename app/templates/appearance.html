@@ -19,7 +19,7 @@
   </form>
   {% if custom %}
   <form method="post" action="/aparencia/logo/padrao" class="footer-actions" onsubmit="return confirm('Voltar para o logo padrão?')">
-    <button class="link-btn">voltar para o logo padrão</button>
+    <button class="link-btn">{{ icon("undo") }} Voltar para o logo padrão</button>
   </form>
   {% endif %}
 </section>

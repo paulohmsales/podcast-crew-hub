@@ -30,11 +30,11 @@
         {% if m.password_hash and m.id != me.id %}
         <form method="post" action="/membros/{{ m.id }}/liberar" class="inline"
               onsubmit="return confirm('Apagar a senha de {{ m.name }}? No próximo acesso com o email, a senha digitada vira a nova.')">
-          <button class="link-btn">liberar novo acesso</button>
+          <button class="link-btn">{{ icon("key") }} Liberar novo acesso</button>
         </form>
         {% endif %}
         <details>
-          <summary class="link-btn">editar</summary>
+          <summary class="icon-btn" title="Editar" aria-label="Editar {{ m.name }}">{{ icon("pencil") }}</summary>
           <form method="post" action="/membros/{{ m.id }}/editar" class="stack">
             <div class="row">
               <label>Nome <input name="name" value="{{ m.name }}" required maxlength="80"></label>

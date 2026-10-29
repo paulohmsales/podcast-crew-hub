@@ -5,7 +5,7 @@
 <dialog class="guide" id="guide" aria-labelledby="guide-title" {{ 'data-auto' if not me.tutorial_seen_at and not request.url.path.startswith('/bem-vindo') }}>
   <header class="guide-head">
     <h2 id="guide-title">Como funciona</h2>
-    <button type="button" class="icon-btn" data-close aria-label="Fechar">✕</button>
+    <button type="button" class="icon-btn" data-close aria-label="Fechar">{{ icon("x", 18) }}</button>
   </header>
   <nav class="guide-tabs" role="tablist" aria-label="Funções">
     {% for key, label in [("inicio", "Início"), ("painel", "Painel"), ("ideias", "Ideias"), ("episodio", "Episódio"), ("agenda", "Agenda"), ("jogos", "Jogos"), ("numeros", "Números"), ("grupo", "Grupo")] %}

@@ -50,7 +50,7 @@
 
 {% if can_delete %}
 <form method="post" action="/episodios/{{ theme.id }}/excluir" class="footer-actions" onsubmit="return confirm('Excluir esse episódio? Não dá para desfazer.')">
-  <button class="link-btn danger">excluir episódio</button>
+  <button class="link-btn danger">{{ icon("trash") }} Excluir episódio</button>
 </form>
 {% endif %}
 {% endblock %}

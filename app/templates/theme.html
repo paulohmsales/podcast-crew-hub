@@ -66,10 +66,10 @@
       <dt>Gravação</dt>
       <dd>{% for r in recordings %}{{ fmt_slot(r.starts_at) }}{{ ", " if not loop.last }}{% else %}<span class="muted">—</span>{% endfor %}</dd>
       <dt>Jogos</dt>
-      <dd>{% for g in theme.games %}<a href="/jogos/{{ g.id }}">{{ g.name }}</a>{{ ", " if not loop.last }}{% else %}<a class="muted" href="?aba=jogos">adicionar</a>{% endfor %}</dd>
+      <dd>{% for g in theme.games %}<a href="/jogos/{{ g.id }}">{{ g.name }}</a>{{ ", " if not loop.last }}{% else %}<a class="link-btn" href="?aba=jogos">{{ icon("plus") }} Adicionar</a>{% endfor %}</dd>
       <dt>Roteiro</dt>
       <dd>{% if theme.script %}<a href="?aba=roteiro">{{ theme.script.split() | length }} palavras</a>{% if theme.script_updated_by %} <span class="muted">· {{ theme.script_updated_by.name }}, {{ theme.script_updated_at.strftime('%d/%m') }}</span>{% endif %}
-          {% else %}<a class="muted" href="?aba=roteiro">começar</a>{% endif %}</dd>
+          {% else %}<a class="link-btn" href="?aba=roteiro">{{ icon("pencil") }} Começar</a>{% endif %}</dd>
       <dt>Votos</dt>
       <dd>{% if voters %}<span class="people">{% for m in voters %}{{ avatar(m) }}{% endfor %}<span class="names">{{ voters | map(attribute='name') | join(', ') }}</span></span>{% else %}<span class="muted">—</span>{% endif %}</dd>
     </dl>
@@ -95,7 +95,7 @@
 {% if revisions %}
 <section class="card">
   <details>
-    <summary class="link-btn">Versões anteriores ({{ revisions | length }})</summary>
+    <summary class="link-btn">{{ icon("history") }} Versões anteriores ({{ revisions | length }})</summary>
     <ul class="plain revisions">
       {% for r in revisions %}
       <li>
@@ -103,10 +103,10 @@
           <span><strong>{{ r.member.name if r.member else '—' }}</strong> <span class="muted small">{{ r.created_at.strftime('%d/%m %H:%M') }} · {{ r.text.split() | length }} palavras</span></span>
           <form method="post" action="/episodios/{{ theme.id }}/roteiro/versoes/{{ r.id }}/restaurar" class="inline"
                 onsubmit="return confirm('Voltar o roteiro para esta versão? A versão atual continua no histórico.')">
-            <button class="link-btn">restaurar</button>
+            <button class="icon-btn" title="Restaurar esta versão" aria-label="Restaurar esta versão">{{ icon("undo") }}</button>
           </form>
         </div>
-        <details><summary class="link-btn small">ver</summary><pre class="rev-text">{{ r.text }}</pre></details>
+        <details><summary class="icon-btn" title="Ver o texto" aria-label="Ver o texto desta versão">{{ icon("eye") }}</summary><pre class="rev-text">{{ r.text }}</pre></details>
       </li>
       {% endfor %}
     </ul>
@@ -141,7 +141,7 @@
         <span class="muted small">{{ fmt_day(c.created_at.date()) }} {{ c.created_at.strftime('%H:%M') }}</span>
         {% if c.member_id == me.id or me.is_admin %}
         <form method="post" action="/episodios/{{ theme.id }}/comentarios/{{ c.id }}/excluir" class="inline" onsubmit="return confirm('Apagar comentário?')">
-          <button class="link-btn" title="Apagar">apagar</button>
+          <button class="icon-btn danger" title="Apagar comentário" aria-label="Apagar comentário">{{ icon("trash") }}</button>
         </form>
         {% endif %}
       </div>
@@ -181,5 +181,5 @@
 {% block scripts %}
 <script>document.querySelector(".ep-tabs .active")?.scrollIntoView({ block: "nearest", inline: "nearest" });</script>
 {% if tab == 'roteiro' %}<script src="/static/script.js?v=1" defer></script>{% endif %}
-{% if tab == 'jogos' %}<script src="/static/games.js?v=1" defer></script>{% endif %}
+{% if tab == 'jogos' %}<script src="/static/games.js?v=2" defer></script>{% endif %}
 {% endblock %}

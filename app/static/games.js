@@ -1,5 +1,5 @@
 // Episode Jogos tab: search Ludopedia as you type and add or remove games
-// without reloading, so the search box keeps focus for the next game.
+// without reloading; adding clears the box and keeps focus for the next game.
 (() => {
   const form = document.querySelector(".game-search");
   if (!form) return;
@@ -65,12 +65,11 @@
       list.innerHTML = await res.text();
       setCount(Number(res.headers.get("X-Games-Count")));
       if (adding) {
-        const done = document.createElement("span");
-        done.className = "muted small";
-        done.textContent = "adicionado";
-        f.replaceWith(done);
+        // ready for the next game: empty box, no stale results
+        clearTimeout(timer);
+        input.value = "";
+        search();
         input.focus();
-        input.select(); // typing the next name replaces this one
       } else if (input.value.trim()) {
         search(); // the removed game gets its Adicionar button back
       }

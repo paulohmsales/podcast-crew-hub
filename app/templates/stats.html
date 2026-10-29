@@ -46,7 +46,7 @@
   </div>
   <p class="muted small chart-note">Maior mês: {{ month_max }} episódio{{ 's' if month_max != 1 }}. Cada episódio conta no seu primeiro quadro. Passe o mouse (ou toque) numa barra para ver o mês.</p>
   <details class="data-table">
-    <summary class="link-btn">ver tabela</summary>
+    <summary class="link-btn">{{ icon("table") }} Ver tabela</summary>
     <table><thead><tr><th>Mês</th><th>Episódios</th><th>Por quadro</th></tr></thead>
       <tbody>{% for r in monthly %}<tr><td>{{ r.label }}</td><td>{{ r.count }}</td>
         <td>{% for q, n in r.parts %}{{ q.name if q else 'Sem quadro' }} {{ n }}{{ ', ' if not loop.last }}{% endfor %}</td></tr>{% endfor %}</tbody></table>

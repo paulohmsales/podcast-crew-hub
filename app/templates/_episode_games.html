@@ -9,7 +9,7 @@
         {% if g.mechanic_list %}<br><span class="muted small">{{ g.mechanic_list[:4] | join(', ') }}</span>{% endif %}</span>
     </a>
     <form method="post" action="/episodios/{{ theme.id }}/jogos/{{ g.id }}/remover" class="inline game-remove">
-      <button class="link-btn" aria-label="Tirar {{ g.name }} do episódio">tirar</button>
+      <button class="icon-btn" title="Tirar do episódio" aria-label="Tirar {{ g.name }} do episódio">{{ icon("x") }}</button>
     </form>
   </li>
   {% endfor %}
