@@ -29,7 +29,7 @@
         {% endif %}
         {% if t.participants %}
         <div class="people" title="{{ t.participants | map(attribute='name') | join(', ') }}">
-          {% for m in t.participants[:6] %}<span class="avatar" aria-hidden="true">{{ m.name[:1] | upper }}</span>{% endfor %}
+          {% for m in t.participants[:6] %}{{ avatar(m) }}{% endfor %}
           <span class="sr-only">Com {{ t.participants | map(attribute='name') | join(', ') }}</span>
           <span class="muted small names">{{ t.participants | map(attribute='name') | join(', ') }}</span>
         </div>

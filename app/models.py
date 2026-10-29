@@ -27,6 +27,7 @@ class Member(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     phone: Mapped[str | None] = mapped_column(String(32))
     tutorial_seen_at: Mapped[datetime | None] = mapped_column(DateTime)  # None: show the tour on next visit
+    photo: Mapped[str | None] = mapped_column(String(80))  # file name under DATA_DIR/fotos
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

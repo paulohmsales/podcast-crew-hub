@@ -2,6 +2,13 @@
 {% block content %}
 <h1 class="hello">Oi, {{ me.name }} 👋</h1>
 
+{% if not me.photo %}
+<section class="card callout photo-nudge">
+  {{ avatar(me, "md") }}
+  <p>Coloque uma foto sua: ela aparece nos cards dos episódios. <a href="/conta#foto">Adicionar foto →</a></p>
+</section>
+{% endif %}
+
 {% set pending_polls = open_polls | rejectattr("id", "in", answered) | list %}
 {% if pending_polls %}
 <section class="card callout">

@@ -18,6 +18,7 @@
     {% for m in members %}
     <li id="m{{ m.id }}">
       <div class="member-head">
+        {{ avatar(m, "md") }}
         <strong>{{ m.name }}</strong>
         {% if m.is_admin %}<span class="pill">admin</span>{% endif %}
         {% if m.id == me.id %}<span class="pill ok">você</span>{% endif %}

@@ -62,7 +62,7 @@
       <dt>Quadros</dt>
       <dd>{% for s in theme.segments %}<span class="chip seg">{{ s.name }}</span>{% else %}<span class="muted">—</span>{% endfor %}</dd>
       <dt>Participantes</dt>
-      <dd>{% if theme.participants %}{{ theme.participants | map(attribute='name') | join(', ') }}{% else %}<span class="muted">—</span>{% endif %}</dd>
+      <dd>{% if theme.participants %}<span class="people">{% for m in theme.participants %}{{ avatar(m) }}{% endfor %}<span class="names">{{ theme.participants | map(attribute='name') | join(', ') }}</span></span>{% else %}<span class="muted">—</span>{% endif %}</dd>
       <dt>Gravação</dt>
       <dd>{% for r in recordings %}{{ fmt_slot(r.starts_at) }}{{ ", " if not loop.last }}{% else %}<span class="muted">—</span>{% endfor %}</dd>
       <dt>Jogos</dt>
@@ -71,7 +71,7 @@
       <dd>{% if theme.script %}<a href="?aba=roteiro">{{ theme.script.split() | length }} palavras</a>{% if theme.script_updated_by %} <span class="muted">· {{ theme.script_updated_by.name }}, {{ theme.script_updated_at.strftime('%d/%m') }}</span>{% endif %}
           {% else %}<a class="muted" href="?aba=roteiro">começar</a>{% endif %}</dd>
       <dt>Votos</dt>
-      <dd>{% if voters %}{{ voters | map(attribute='name') | join(', ') }}{% else %}<span class="muted">—</span>{% endif %}</dd>
+      <dd>{% if voters %}<span class="people">{% for m in voters %}{{ avatar(m) }}{% endfor %}<span class="names">{{ voters | map(attribute='name') | join(', ') }}</span></span>{% else %}<span class="muted">—</span>{% endif %}</dd>
     </dl>
   </section>
 </div>
@@ -200,7 +200,7 @@
   <ol class="plain timeline">
     {% for e in events %}
     <li class="ev-{{ e.kind }}">
-      <span class="avatar" aria-hidden="true">{{ (e.member.name if e.member else '?')[:1] | upper }}</span>
+      {{ avatar(e.member) }}
       <span><strong>{{ e.member.name if e.member else 'Alguém' }}</strong> {{ e.text }}</span>
       <time class="muted small" datetime="{{ e.created_at.isoformat() }}">{{ fmt_day(e.created_at.date()) }} {{ e.created_at.strftime('%H:%M') }}</time>
     </li>

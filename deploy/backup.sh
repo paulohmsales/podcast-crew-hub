@@ -1,5 +1,5 @@
 #!/bin/bash
-# Nightly SQLite backup on the VPS (installed as entaoganhei-backup.timer by
+# Nightly SQLite + uploaded files backup on the VPS (installed as entaoganhei-backup.timer by
 # deploy/install-backup.sh). Keeps 30 days.
 set -euo pipefail
 OUT=/opt/entaoganhei/backups
@@ -10,4 +10,7 @@ docker exec "$CID" python -c "import sqlite3; s=sqlite3.connect('/data/entao-gan
 docker cp "$CID:/data/backup.db" "$OUT/entao-ganhei-$STAMP.db"
 docker exec "$CID" rm -f /data/backup.db
 gzip -f "$OUT/entao-ganhei-$STAMP.db"
+# Uploaded images (member photos, logo) live next to the database.
+docker exec "$CID" tar -czf - -C /data --exclude='*.db' --exclude='*.db-*' . > "$OUT/entao-ganhei-files-$STAMP.tar.gz"
 find "$OUT" -name 'entao-ganhei-*.db.gz' -mtime +30 -delete
+find "$OUT" -name 'entao-ganhei-files-*.tar.gz' -mtime +30 -delete

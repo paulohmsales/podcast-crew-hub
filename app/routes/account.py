@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
+import re
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from app import auth
+from app import auth, photos
 from app.db import get_db
 from app.models import Member
 from app.web import COOKIE, current_member, render, set_session_cookie
@@ -98,3 +100,45 @@ def change_password(
     resp = render(request, "account.html", me, notice="Senha trocada. Os outros aparelhos foram desconectados.")
     set_session_cookie(resp, auth.start_session(db, me))
     return resp
+
+
+# --- photo --------------------------------------------------------------------
+
+PHOTO_NAME = re.compile(r"\d+-[0-9a-f]+\.webp")
+
+
+@router.get("/fotos/{name}")
+def photo(name: str, _me: Member = Depends(current_member)):
+    path = photos.PHOTO_DIR / name
+    if not PHOTO_NAME.fullmatch(name) or not path.exists():
+        raise HTTPException(404)
+    # Each upload gets a new file name, so this never goes stale.
+    return FileResponse(path, media_type="image/webp", headers={"Cache-Control": "private, max-age=31536000, immutable"})
+
+
+@router.post("/conta/foto")
+async def upload_photo(
+    request: Request,
+    file: UploadFile = File(...),
+    next: str = Form("/conta"),
+    me: Member = Depends(current_member),
+    db: Session = Depends(get_db),
+):
+    data = await file.read(photos.MAX_BYTES + 1)
+    try:
+        photos.save(me, data)
+    except photos.PhotoError as e:
+        if next == "/bem-vindo":
+            return render(request, "welcome_photo.html", me, error=str(e))
+        return render(request, "account.html", me, photo_error=str(e))
+    db.commit()
+    if next == "/bem-vindo":
+        return RedirectResponse("/bem-vindo", status_code=303)
+    return render(request, "account.html", me, notice="Foto atualizada.")
+
+
+@router.post("/conta/foto/remover")
+def remove_photo(request: Request, me: Member = Depends(current_member), db: Session = Depends(get_db)):
+    photos.remove(me)
+    db.commit()
+    return render(request, "account.html", me, notice="Foto removida. No lugar dela aparecem suas iniciais.")

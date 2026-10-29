@@ -6,9 +6,10 @@ from urllib.parse import quote
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup, escape
 from sqlalchemy.orm import Session
 
-from app import auth, branding, schedule
+from app import auth, branding, photos, schedule
 from app.db import get_db
 from app.models import THEME_STATUSES, Member
 
@@ -31,7 +32,17 @@ def whatsapp_url(text: str, phone: str | None = None) -> str:
     return f"https://wa.me/{digits}?text={quote(text)}"
 
 
-templates.env.globals.update(whatsapp_url=whatsapp_url, logo_url=branding.logo_url)
+def avatar(member: Member | None, size: str = "") -> Markup:
+    """A member's round photo, or their initials when they haven't uploaded one."""
+    cls = f"avatar {size}".strip()
+    if member is None:
+        return Markup(f'<span class="{cls}" aria-hidden="true">?</span>')
+    if member.photo:
+        return Markup(f'<img class="{cls}" src="/fotos/{escape(member.photo)}" alt="" title="{escape(member.name)}">')
+    return Markup(f'<span class="{cls}" aria-hidden="true" title="{escape(member.name)}">{escape(photos.initials(member.name))}</span>')
+
+
+templates.env.globals.update(whatsapp_url=whatsapp_url, logo_url=branding.logo_url, avatar=avatar)
 
 
 class LoginRequired(Exception):

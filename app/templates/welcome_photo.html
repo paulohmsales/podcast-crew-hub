@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Sua foto · Então Ganhei{% endblock %}
+{% block content %}
+<section class="card tour">
+  <h1>Bem-vindo, {{ me.name }}!</h1>
+  <p>Antes de tudo, coloque uma <strong>foto sua</strong>. Ela aparece nos cards dos episódios, então fica fácil ver quem está em cada um.</p>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  {% set next = "/bem-vindo" %}
+  {% include "_photo_form.html" %}
+  <p class="tour-skip"><a href="/bem-vindo" class="muted small">pular por agora (aparecem suas iniciais, {{ avatar(me) }})</a></p>
+</section>
+{% endblock %}

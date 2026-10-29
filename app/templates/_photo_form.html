@@ -1,0 +1,29 @@
+{# Photo upload with a live preview; expects `next` set by the including template. #}
+<form method="post" action="/conta/foto" enctype="multipart/form-data" class="stack photo-form">
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="photo-pick">
+    <span data-preview>{{ avatar(me, "xl") }}</span>
+    <label class="btn">{{ 'Trocar foto' if me.photo else 'Escolher foto' }}
+      <input type="file" name="file" accept="image/*" required class="sr-only" data-photo-input>
+    </label>
+  </div>
+  <p class="muted small" data-photo-hint>JPG, PNG, WEBP ou GIF. A gente corta num quadrado, centralizado.</p>
+  <button class="btn primary">Salvar foto</button>
+</form>
+<script>
+  (() => {
+    const form = document.currentScript.previousElementSibling;
+    const input = form.querySelector("[data-photo-input]");
+    const preview = form.querySelector("[data-preview]");
+    input.addEventListener("change", () => {
+      const file = input.files[0];
+      if (!file) return;
+      const img = document.createElement("img");
+      img.className = "avatar xl";
+      img.alt = "";
+      img.src = URL.createObjectURL(file);
+      preview.replaceChildren(img);
+      form.querySelector("[data-photo-hint]").textContent = file.name;
+    });
+  })();
+</script>

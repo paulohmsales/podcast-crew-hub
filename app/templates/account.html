@@ -4,6 +4,19 @@
 <h1>Minha conta</h1>
 {% if notice %}<p class="card callout ok" role="status">{{ notice }}</p>{% endif %}
 
+<section class="card" id="foto">
+  <h2>Foto</h2>
+  <p class="muted small">Aparece nos cards dos episódios e no histórico. Sem foto, aparecem suas iniciais.</p>
+  {% if photo_error %}<p class="error" role="alert">{{ photo_error }}</p>{% endif %}
+  {% set next = "/conta" %}
+  {% include "_photo_form.html" %}
+  {% if me.photo %}
+  <form method="post" action="/conta/foto/remover" class="footer-actions" onsubmit="return confirm('Remover sua foto?')">
+    <button class="link-btn">remover foto</button>
+  </form>
+  {% endif %}
+</section>
+
 <section class="card">
   <h2>Dados</h2>
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}

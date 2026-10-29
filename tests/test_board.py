@@ -99,7 +99,7 @@ def test_first_visit_shows_tutorial_once(client, db):
     c = TestClient(app)
     c.post("/entrar", data={"email": "novo@ex.com", "password": "senha-nova-1"})
     res = c.get("/", follow_redirects=False)
-    assert res.headers["location"] == "/bem-vindo"
+    assert res.headers["location"] == "/bem-vindo/foto"  # photo first, which can be skipped
     assert "Bem-vindo, Novo" in c.get("/bem-vindo").text
     c.post("/bem-vindo/concluir")
     assert c.get("/", follow_redirects=False).status_code == 200

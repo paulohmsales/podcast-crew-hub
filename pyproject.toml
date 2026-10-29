@@ -11,6 +11,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "alembic>=1.14",
     "diff-match-patch>=20241021",
+    "pillow>=11",
 ]
 
 [dependency-groups]

@@ -301,6 +301,16 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
   border: 2px solid var(--surface); margin-left: -6px;
 }
 .avatar:first-child { margin-left: 0; }
+img.avatar { object-fit: cover; background: var(--surface-2); padding: 0; }
+.avatar.md { width: 36px; height: 36px; font-size: 0.9rem; margin-left: 0; }
+.avatar.xl { width: 96px; height: 96px; font-size: 2rem; margin-left: 0; border-width: 3px; }
+.photo-pick { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.photo-pick label.btn { cursor: pointer; }
+.photo-nudge { display: flex; align-items: center; gap: 0.75rem; }
+.photo-nudge p { margin: 0; }
+.member-head .avatar { margin-right: 0.25rem; }
+.tour-skip .avatar { vertical-align: middle; margin-left: 0; }
+.facts .people { display: inline-flex; flex-wrap: wrap; }
 .people .names { margin-left: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ep-foot { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .vote-chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); border-radius: 999px; padding: 0.05rem 0.55rem; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
@@ -435,3 +445,4 @@ ol.timeline { list-style: none; margin: 0; padding: 0; }
 @media (max-width: 500px) {
   .ep-tabs a { padding: 0.5rem 0.5rem; font-size: 0.9rem; }
 }
+.facts .people .names { white-space: normal; }
