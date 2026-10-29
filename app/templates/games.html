@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Jogos · Então Ganhei{% endblock %}
+{% block page_class %}fill-page{% endblock %}
 {% block content %}
 <h1>Jogos</h1>
 {% if not ready %}{% include "_ludopedia_setup.html" %}{% endif %}
@@ -21,13 +22,13 @@
 {% if error %}<p class="card callout error" role="alert">{{ error }}</p>{% endif %}
 
 {% if q or mechanic %}
-<section class="card">
+<section class="card fill">
   <div class="card-head">
     <h2>{% if q %}"{{ q }}"{% endif %}{% if q and mechanic_name %} · {% endif %}{{ mechanic_name }}</h2>
     <span class="muted small">{{ total }} jogo{{ 's' if total != 1 }}</span>
   </div>
   {% if results %}
-  <ul class="plain game-list">
+  <ul class="plain game-list scroll">
     {% for g in results %}
     {% set eps = in_episodes.get(g.id, []) %}
     <li>
@@ -58,10 +59,10 @@
 </section>
 {% endif %}
 
-<section class="card">
+<section class="card fill">
   <h2>Jogos que já passaram pelo podcast</h2>
   {% if covered %}
-  <ul class="plain game-list">
+  <ul class="plain game-list scroll">
     {% for g in covered %}
     <li>
       <a class="game-row" href="/jogos/{{ g.id }}">

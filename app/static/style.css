@@ -345,6 +345,21 @@ img.avatar { object-fit: cover; background: var(--surface-2); padding: 0; }
 .listen:hover { filter: brightness(1.1); }
 .board-foot { margin: 0.25rem 0 0; }
 
+/* Long lists: the page fills the screen below the header and only the list scrolls,
+   so search boxes, tabs and forms stay in view. .fill takes the leftover height and
+   its .scroll child scrolls; a .scroll placed directly in the page does both. */
+.page.fill-page { height: calc(100dvh - var(--topbar-h)); display: flex; flex-direction: column; padding-bottom: 0.5rem; }
+.fill-page > * { flex: none; }
+.fill-page > .fill { flex: 1 1 0; min-height: 240px; display: flex; flex-direction: column; }
+.fill-page > .fill > * { flex: none; }
+.fill-page .scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; }
+.fill-page > .scroll { min-height: 240px; }
+.fill-page > .fill + .fill { margin-top: 1rem; }
+@media (max-height: 560px) {
+  .page.fill-page { height: auto; display: block; }
+  .fill-page .scroll { overflow: visible; }
+}
+
 /* The board fills the screen below the header and each column scrolls on its own. */
 .page.board-page { height: calc(100dvh - var(--topbar-h)); display: flex; flex-direction: column; padding-bottom: 0.5rem; }
 .board-page .board { flex: 1; min-height: 320px; grid-template-rows: minmax(0, 1fr); }

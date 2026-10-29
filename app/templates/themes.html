@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Episódios · Então Ganhei{% endblock %}
+{% block page_class %}fill-page{% endblock %}
 {% block content %}
 {% include "_episodes_head.html" %}
 
@@ -22,7 +23,7 @@
 </form>
 
 {% if themes %}
-<ul class="plain theme-list card">
+<ul class="plain theme-list card scroll">
   {% for theme in themes %}
   {% with votes = vote_counts.get(theme.id, 0), comment_count = comment_counts.get(theme.id, 0) %}
   {% include "_theme_row.html" %}

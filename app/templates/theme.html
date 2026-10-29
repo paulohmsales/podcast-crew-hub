@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ theme.title }} · Então Ganhei{% endblock %}
-{% block page_class %}mid{% endblock %}
+{% block page_class %}mid{{ ' fill-page' if tab in ('jogos', 'conversa', 'historico') }}{% endblock %}
 {% block content %}
 <p class="crumb"><a href="/episodios">← Episódios</a></p>
 
@@ -115,25 +115,27 @@
 {% endif %}
 
 {% elif tab == 'jogos' %}
-<section class="card">
+<section class="card fill">
   {% if ludopedia_ready %}
   <form method="get" action="/episodios/{{ theme.id }}" class="toolbar game-search" role="search" data-url="/episodios/{{ theme.id }}/jogos/busca">
     <input type="hidden" name="aba" value="jogos">
     <input type="search" name="jogo" value="{{ jogo }}" placeholder="Digite o nome de um jogo para adicionar…" aria-label="Buscar jogo para adicionar" autocomplete="off">
     <button class="btn">Buscar</button>
   </form>
-  <div id="game-results" aria-live="polite">{% include "_game_results.html" %}</div>
   {% else %}
   <p class="muted small">Busca de jogos indisponível: a Ludopedia ainda não foi conectada.</p>
   {% endif %}
-  <h3 class="game-list-title">No episódio <span id="game-count" class="muted">{{ theme.games | length }}</span></h3>
-  <div id="episode-games">{% include "_episode_games.html" %}</div>
+  <div class="scroll">
+    {% if ludopedia_ready %}<div id="game-results" aria-live="polite">{% include "_game_results.html" %}</div>{% endif %}
+    <h3 class="game-list-title">No episódio <span id="game-count" class="muted">{{ theme.games | length }}</span></h3>
+    <div id="episode-games">{% include "_episode_games.html" %}</div>
+  </div>
 </section>
 
 {% elif tab == 'conversa' %}
-<section class="card" id="comentarios">
+<section class="card fill" id="comentarios">
   {% if theme.comments %}
-  <ul class="plain comments">
+  <ul class="plain comments scroll">
     {% for c in theme.comments %}
     <li>
       <div class="comment-head">
@@ -160,9 +162,9 @@
 </section>
 
 {% elif tab == 'historico' %}
-<section class="card">
+<section class="card fill">
   {% if events %}
-  <ol class="plain timeline">
+  <ol class="plain timeline scroll">
     {% for e in events %}
     <li class="ev-{{ e.kind }}">
       {{ avatar(e.member) }}
@@ -182,4 +184,5 @@
 <script>document.querySelector(".ep-tabs .active")?.scrollIntoView({ block: "nearest", inline: "nearest" });</script>
 {% if tab == 'roteiro' %}<script src="/static/script.js?v=1" defer></script>{% endif %}
 {% if tab == 'jogos' %}<script src="/static/games.js?v=2" defer></script>{% endif %}
+{% if tab == 'conversa' %}<script>document.querySelector(".comments.scroll")?.scrollTo(0, 1e9);</script>{% endif %}
 {% endblock %}
