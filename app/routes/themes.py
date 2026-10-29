@@ -13,6 +13,7 @@ from app.db import get_db
 from app.models import (
     THEME_STATUSES,
     Member,
+    Poll,
     Recording,
     ScriptRevision,
     Segment,
@@ -217,6 +218,8 @@ def show_theme(
         recordings=db.scalars(
             select(Recording).where(Recording.theme_id == theme.id).order_by(Recording.starts_at)
         ).all(),
+        polls=db.scalars(select(Poll).where(Poll.theme_id == theme.id).order_by(Poll.closed, Poll.start_date.desc())).all(),
+        member_count=db.scalar(select(func.count(Member.id))),
         error=erro,
     )
     if tab == "jogos":

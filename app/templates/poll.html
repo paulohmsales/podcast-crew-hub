@@ -7,12 +7,23 @@
   <div>
     <h1>{{ poll.title }}</h1>
     <p class="meta">
-      {% if poll.theme %}Episódio: <a href="/episodios/{{ poll.theme.id }}">{{ poll.theme.title }}</a> · {% endif %}
       {{ fmt_day(poll.start_date) }} a {{ fmt_day(poll.end_date) }}, {{ fmt_minutes(poll.day_start) }}–{{ fmt_minutes(poll.day_end) }}
       {% if poll.closed %}<span class="pill">fechada</span>{% endif %}
     </p>
   </div>
 </div>
+
+<section class="card poll-episode">
+  <form method="post" action="/agenda/{{ poll.id }}/episodio" class="row">
+    <label for="poll-theme" class="muted small">Episódio desta rodada</label>
+    <select id="poll-theme" name="theme_id" onchange="this.form.submit()">
+      <option value="">— a definir —</option>
+      {% for t in episode_choices %}<option value="{{ t.id }}" {{ 'selected' if poll.theme and t.id == poll.theme.id }}>{{ t.title }}</option>{% endfor %}
+    </select>
+    <noscript><button class="btn small">Trocar</button></noscript>
+    {% if poll.theme %}<a class="btn small" href="/episodios/{{ poll.theme.id }}">Abrir episódio →</a>{% endif %}
+  </form>
+</section>
 
 {% for r in recordings %}
 <section class="card callout ok">
@@ -22,10 +33,11 @@
 {% endfor %}
 
 <section class="card">
-  <div class="who">
-    <span class="muted small">Responderam {{ responded | length }}/{{ members | length }}:</span>
+  <h2>Quem respondeu <span class="muted small" id="who-count">{{ responded | length }}/{{ members | length }}</span></h2>
+  <div class="who" id="who">
     {% for m in members %}
-    <span class="chip {{ 'done' if m.id in responded else 'todo' }}">{{ '✓' if m.id in responded else '…' }} {{ m.name }}</span>
+    {% set state = 'can' if m.id in can else ('cant' if m.id in responded else 'todo') %}
+    <span class="chip {{ state }}" data-member="{{ m.name }}">{{ m.name }}<span class="chip-state">{{ {'can': 'pode', 'cant': 'não pode', 'todo': 'falta'}[state] }}</span></span>
     {% endfor %}
   </div>
   <div class="actions">
@@ -39,11 +51,12 @@
 {% if not poll.closed %}
 <section class="card">
   <div class="mode-switch" role="tablist">
-    <button type="button" role="tab" data-mode="me" aria-selected="true">Meus horários</button>
-    <button type="button" role="tab" data-mode="group" aria-selected="false">Ver o grupo</button>
+    <button type="button" role="tab" data-mode="me" aria-selected="true">Marcar meus horários</button>
+    <button type="button" role="tab" data-mode="group" aria-selected="false">Ver horários de todos</button>
   </div>
-  <p class="hint" data-hint="me">Toque ou arraste nos horários em que <strong>você pode gravar</strong>. Salva sozinho.</p>
-  <p class="hint" data-hint="group" hidden>Quanto mais escuro, mais gente pode. Toque num horário para ver quem.</p>
+  <p class="hint" data-hint="me">Você está marcando como <strong>{{ me.name }}</strong>: toque ou arraste nos horários em que pode gravar. Salva sozinho.
+    Se não pode em nenhum, use o botão lá embaixo.</p>
+  <p class="hint" data-hint="group" hidden>O número em cada horário é quantas pessoas podem (mais escuro, mais gente). Toque num horário para ver os nomes.</p>
 {% else %}
 <section class="card">
   <h2>Disponibilidade do grupo</h2>
@@ -78,7 +91,7 @@
   <p class="who-at" id="who-at" aria-live="polite"></p>
   {% if not poll.closed %}
   <div class="row save-row">
-    <span id="save-status" class="muted small" aria-live="polite">{{ 'Seus horários estão salvos.' if me.id in responded else 'Você ainda não respondeu.' }}</span>
+    <span id="save-status" class="muted small" aria-live="polite">{% if me.id in can %}Seus horários estão salvos.{% elif me.id in responded %}Você marcou que não pode em nenhum horário.{% else %}Você ainda não respondeu.{% endif %}</span>
     <button type="button" class="btn small" id="none-btn">Não posso em nenhum</button>
   </div>
   {% endif %}
@@ -94,8 +107,11 @@
         <strong>{{ w.label }}</strong>
         <span class="pill {{ 'ok' if w.members | length == members | length else '' }}">{{ w.members | length }}/{{ members | length }}</span>
         <div class="muted small">{{ w.members | map(attribute='name') | join(', ') }}
-          {% set missing = members | rejectattr('id', 'in', w.members | map(attribute='id') | list) | map(attribute='name') | list %}
-          {% if missing %} · sem: {{ missing | join(', ') }}{% endif %}
+          {% set free_ids = w.members | map(attribute='id') | list %}
+          {% set busy = members | rejectattr('id', 'in', free_ids) | selectattr('id', 'in', responded) | map(attribute='name') | list %}
+          {% set silent = members | rejectattr('id', 'in', responded) | map(attribute='name') | list %}
+          {% if busy %}<br>não podem: {{ busy | join(', ') }}{% endif %}
+          {% if silent %}<br>ainda não responderam: {{ silent | join(', ') }}{% endif %}
         </div>
       </div>
       {% if not poll.closed %}
@@ -145,4 +161,4 @@
 </section>
 {% endblock %}
 
-{% block scripts %}<script src="/static/grid.js?v=1" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/grid.js?v=2" defer></script>{% endblock %}

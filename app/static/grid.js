@@ -74,6 +74,18 @@
   window.addEventListener("pointerup", endPaint);
   window.addEventListener("pointercancel", endPaint);
 
+  // --- who answered ----------------------------------------------------------
+  const LABELS = { can: "pode", cant: "não pode", todo: "falta" };
+  const markMe = (state) => {
+    const chip = [...document.querySelectorAll("#who [data-member]")].find((c) => c.dataset.member === myName);
+    if (!chip) return;
+    chip.className = `chip ${state}`;
+    chip.querySelector(".chip-state").textContent = LABELS[state];
+    const chips = document.querySelectorAll("#who [data-member]");
+    const answered = [...chips].filter((c) => !c.classList.contains("todo")).length;
+    document.getElementById("who-count").textContent = `${answered}/${chips.length}`;
+  };
+
   // --- saving ----------------------------------------------------------------
   let inflight = null;
   let again = false;
@@ -97,6 +109,7 @@
       status.textContent = slots.length
         ? `Salvo ✓ — ${slots.length} horário${slots.length > 1 ? "s" : ""} marcado${slots.length > 1 ? "s" : ""}.`
         : "Salvo ✓ — você marcou que não pode em nenhum.";
+      markMe(slots.length ? "can" : "cant");
     } catch (err) {
       status.textContent = "Não consegui salvar. Confira a conexão e toque de novo.";
       dirty = true;

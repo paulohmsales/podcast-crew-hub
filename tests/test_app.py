@@ -123,3 +123,24 @@ def test_best_windows_prefers_more_people_then_longer():
     assert (windows[0].label, len(windows[0].members)) == ("seg 02/11, 20:00–21:30", 3)
     # next best: A and C for longer
     assert (windows[1].label, len(windows[1].members)) == ("seg 02/11, 20:00–22:00", 2)
+
+
+def test_poll_shows_who_cant_and_links_episode(client, ana_client, db, paulo, ana):
+    first = int(client.post("/episodios", data={"title": "Bruxos"}).url.path.rsplit("/", 1)[1])
+    second = int(client.post("/episodios", data={"title": "Rinha - Paulo"}).url.path.rsplit("/", 1)[1])
+    poll_id = _make_poll(client, theme_id=str(first))
+    client.post(f"/agenda/{poll_id}/disponibilidade", json={"slots": ["2026-11-03T19:00", "2026-11-03T19:30"]})
+    ana_client.post(f"/agenda/{poll_id}/disponibilidade", json={"slots": []})  # "não posso em nenhum"
+    page = client.get(f"/agenda/{poll_id}").text
+    assert 'class="chip can" data-member="Paulo"' in page and 'class="chip cant" data-member="Ana"' in page
+    assert "não podem: Ana" in page  # not lumped in with people who haven't answered
+    assert "Ver horários de todos" in page and "marcando como <strong>Paulo</strong>" in page
+
+    # the episode links to the round, and the round can move to another episode
+    assert f'href="/agenda/{poll_id}"' in client.get(f"/episodios/{first}").text
+    client.post(f"/agenda/{poll_id}/episodio", data={"theme_id": str(second)})
+    db.expire_all()
+    poll = db.get(Poll, poll_id)
+    assert poll.theme_id == second and poll.title == "Gravação: Rinha - Paulo"
+    assert f'href="/agenda/{poll_id}"' in client.get(f"/episodios/{second}").text
+    assert f'href="/agenda/{poll_id}"' not in client.get(f"/episodios/{first}").text

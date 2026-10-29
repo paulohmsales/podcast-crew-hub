@@ -23,8 +23,10 @@
         {% endif %}
         {% if t.games %}
         <div class="game-thumbs" title="{{ t.games | map(attribute='name') | join(', ') }}">
-          {% for g in t.games[:5] %}{% if g.thumb %}<img src="{{ g.thumb }}" alt="{{ g.name }}" width="28" height="28">{% endif %}{% endfor %}
-          <span class="muted small names">{{ t.games | map(attribute='name') | join(', ') }}</span>
+          {% set shown = (t.games | selectattr('thumb') | list)[:5] %}
+          {% for g in shown %}<img src="{{ g.thumb }}" alt="{{ g.name }}" width="28" height="28">{% endfor %}
+          {% set rest = t.games | length - shown | length %}
+          {% if rest %}<span class="muted small more">{{ '+' ~ rest if shown else rest ~ ' jogo' ~ ('s' if rest != 1) }}</span>{% endif %}
         </div>
         {% endif %}
         {% if t.participants %}

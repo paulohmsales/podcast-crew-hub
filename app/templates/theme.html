@@ -23,7 +23,9 @@
               title="{{ 'Tirar meu voto' if voted else 'Votar' }}">▲ {{ voters | length }} voto{{ 's' if voters | length != 1 }}</button>
     </form>
     {% if theme.episode_url %}<a class="btn small primary" href="{{ theme.episode_url }}" target="_blank" rel="noopener">▶ Ouvir</a>{% endif %}
-    {% if theme.status in ('ideia', 'pauta', 'agendado') %}<a class="btn small" href="/agenda/nova?tema={{ theme.id }}">📅 Marcar gravação</a>{% endif %}
+    {% set open_poll = polls | rejectattr('closed') | first %}
+    {% if open_poll %}<a class="btn small" href="/agenda/{{ open_poll.id }}">📅 Horários: {{ open_poll.responses | length }}/{{ member_count }} responderam</a>
+    {% elif theme.status in ('ideia', 'pauta', 'agendado') %}<a class="btn small" href="/agenda/nova?tema={{ theme.id }}">📅 Marcar gravação</a>{% endif %}
     <a class="btn small" href="/episodios/{{ theme.id }}/editar">✎ Editar</a>
   </div>
 </header>
@@ -64,7 +66,11 @@
       <dt>Participantes</dt>
       <dd>{% if theme.participants %}<span class="people">{% for m in theme.participants %}{{ avatar(m) }}{% endfor %}<span class="names">{{ theme.participants | map(attribute='name') | join(', ') }}</span></span>{% else %}<span class="muted">—</span>{% endif %}</dd>
       <dt>Gravação</dt>
-      <dd>{% for r in recordings %}{{ fmt_slot(r.starts_at) }}{{ ", " if not loop.last }}{% else %}<span class="muted">—</span>{% endfor %}</dd>
+      <dd>
+        {% for r in recordings %}<a href="{{ '/agenda/' ~ r.poll_id if r.poll_id else '/agenda' }}">{{ fmt_slot(r.starts_at) }}</a>{{ ", " if not loop.last }}{% endfor %}
+        {% for p in polls if not p.closed %}<div><a href="/agenda/{{ p.id }}">Marcando horário</a> <span class="muted small">· {{ p.responses | length }}/{{ member_count }} responderam</span></div>{% endfor %}
+        {% if not recordings and not polls | rejectattr('closed') | list %}{% if theme.status in ('ideia', 'pauta', 'agendado') %}<a class="link-btn" href="/agenda/nova?tema={{ theme.id }}">{{ icon("plus") }} Marcar</a>{% else %}<span class="muted">—</span>{% endif %}{% endif %}
+      </dd>
       <dt>Jogos</dt>
       <dd>{% for g in theme.games %}<a href="/jogos/{{ g.id }}">{{ g.name }}</a>{{ ", " if not loop.last }}{% else %}<a class="link-btn" href="?aba=jogos">{{ icon("plus") }} Adicionar</a>{% endfor %}</dd>
       <dt>Roteiro</dt>

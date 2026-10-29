@@ -126,6 +126,7 @@ def show_poll(poll_id: int, request: Request, me: Member = Depends(current_membe
     names = {m.id: m.name for m in members}
     responded = {r.member_id for r in poll.responses}
     pending = [m for m in members if m.id not in responded]
+    can = {i for ids in free.values() for i in ids}  # answered with at least one free slot
     url = f"{BASE_URL}/agenda/{poll.id}"
     recordings = db.scalars(select(Recording).where(Recording.poll_id == poll.id).order_by(Recording.starts_at)).all()
     cells = {
@@ -144,6 +145,7 @@ def show_poll(poll_id: int, request: Request, me: Member = Depends(current_membe
         cells=cells,
         members=members,
         responded=responded,
+        can=can,
         pending=pending,
         windows=schedule.best_windows(poll, members),
         recordings=recordings,
@@ -154,7 +156,34 @@ def show_poll(poll_id: int, request: Request, me: Member = Depends(current_membe
             + f"\n{url}"
         ),
         themes=_schedulable_themes(db),
+        episode_choices=_episode_choices(db, poll.theme),
     )
+
+
+def _episode_choices(db: Session, current: Theme | None) -> list[Theme]:
+    themes = list(_schedulable_themes(db))
+    if current and current not in themes:
+        themes.insert(0, current)
+    return themes
+
+
+@router.post("/{poll_id}/episodio")
+def change_poll_episode(
+    poll_id: int, theme_id: str = Form(""), me: Member = Depends(current_member), db: Session = Depends(get_db)
+):
+    """Point a round at another episode (or none). An auto-made title follows the episode."""
+    poll = _poll_or_404(db, poll_id)
+    old = poll.theme
+    new = db.get(Theme, int(theme_id)) if theme_id.isdigit() else None
+    if new != old:
+        auto_title = poll.title == (f"Gravação: {old.title}" if old else f"Semana de {schedule.fmt_day(poll.start_date)}")
+        if new and auto_title:
+            poll.title = f"Gravação: {new.title}"[:200]
+        poll.theme_id = new.id if new else None
+        if new:
+            history.log(db, new, me, "gravacao", f"ligou a rodada de horários \"{poll.title}\" a este episódio")
+        db.commit()
+    return RedirectResponse(f"/agenda/{poll_id}", status_code=303)
 
 
 @router.post("/{poll_id}/disponibilidade")

@@ -198,6 +198,12 @@ form.inline { display: inline; }
 .chip { font-size: 0.8rem; padding: 0.1rem 0.55rem; border-radius: 999px; border: 1px solid var(--line); }
 .chip.done { color: var(--ok); border-color: currentColor; }
 .chip.todo { color: var(--muted); border-style: dashed; }
+#who .chip { display: inline-flex; align-items: baseline; gap: 0.35rem; }
+.chip-state { font-size: 0.7rem; opacity: 0.85; }
+.chip.can { color: var(--ok); border-color: currentColor; }
+.chip.cant { color: var(--danger); border-color: currentColor; }
+.poll-episode .row { align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.poll-episode select { flex: 1 1 14rem; min-width: 0; }
 
 .mode-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); margin-bottom: 0.5rem; }
 .mode-switch button { border: 0; background: none; padding: 0.4rem 0.9rem; border-radius: 999px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
@@ -222,6 +228,7 @@ form.inline { display: inline; }
 .slot-grid[data-mode=me] td.mine + td.mine { box-shadow: none; }
 .slot-grid[data-mode=group] td { background: rgba(var(--heat-rgb), calc(0.08 + var(--heat) * 0.92)); }
 .slot-grid[data-mode=group] td[data-n="0"] { background: var(--surface-2); }
+.slot-grid[data-mode=group] td:not([data-n="0"])::before { content: attr(data-n); position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.65rem; font-weight: 700; color: var(--text); pointer-events: none; }
 .slot-grid[data-mode=group] td.mine::after { content: ""; position: absolute; inset: 40% auto auto 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .slot-grid td.focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .who-at { min-height: 1.5em; font-size: 0.9rem; margin: 0.5rem 0 0; }
@@ -416,7 +423,7 @@ a.game-row:hover strong { text-decoration: underline; }
 .small-h { font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0.35rem; }
 .game-thumbs { display: flex; align-items: center; gap: 0.2rem; min-width: 0; }
 .game-thumbs img { width: 28px; height: 28px; object-fit: cover; border-radius: 5px; flex: none; }
-.game-thumbs .names { margin-left: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-thumbs .more { margin-left: 0.2rem; white-space: nowrap; }
 .pager { margin-top: 0.75rem; }
 .add-to { margin-top: 0.75rem; }
 .in-episodes { margin: 0.3rem 0 0 calc(48px + 0.75rem); line-height: 1.6; }
