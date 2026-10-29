@@ -1,0 +1,79 @@
+{# The "how it works" guide: a floating ? on every page opens it; it opens by itself
+   on each new visit until the member ticks "não mostrar de novo". #}
+<button type="button" class="help-fab" data-open-guide aria-label="Como funciona" title="Como funciona">?</button>
+
+<dialog class="guide" id="guide" aria-labelledby="guide-title" {{ 'data-auto' if not me.tutorial_seen_at and not request.url.path.startswith('/bem-vindo') }}>
+  <header class="guide-head">
+    <h2 id="guide-title">Como funciona</h2>
+    <button type="button" class="icon-btn" data-close aria-label="Fechar">✕</button>
+  </header>
+  <nav class="guide-tabs" role="tablist" aria-label="Funções">
+    {% for key, label in [("inicio", "Início"), ("painel", "Painel"), ("ideias", "Ideias"), ("episodio", "Episódio"), ("agenda", "Agenda"), ("jogos", "Jogos"), ("numeros", "Números"), ("grupo", "Grupo")] %}
+    <button type="button" role="tab" data-tab="{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>
+    {% endfor %}
+  </nav>
+
+  <div class="guide-body">
+    <section data-panel="inicio">
+      <div class="tour-art" aria-hidden="true"><img src="{{ logo_url() }}" alt="" width="64" height="64" class="logo"></div>
+      <h3>Oi, {{ me.name }}!</h3>
+      <p>Aqui o grupo organiza os <strong>episódios</strong>, os <strong>horários de gravação</strong> e os <strong>jogos</strong> de cada pauta.</p>
+      <p>Use as abas acima para ver cada parte. Este guia fica sempre no botão <span class="help-fab inline" aria-hidden="true">?</span> no canto da tela.</p>
+    </section>
+    <section data-panel="painel" hidden>
+      <div class="tour-art" aria-hidden="true">
+        <div class="mini-board"><span>Ideia</span><span>Na pauta</span><span>Agendado</span><span>Gravado</span><span>Publicado</span></div>
+      </div>
+      <h3>Episódios: o painel</h3>
+      <p>Cada episódio é um card que anda pelas colunas, da ideia até o episódio no ar. Cada coluna rola sozinha.</p>
+      <p><strong>Para mover um card, arraste.</strong> No celular, <strong>segure o card</strong> por um instante e arraste (deslize para os lados para ver todas as colunas).</p>
+      <p>Os quadros têm cores, as fotos mostram quem gravou e o <span class="listen inline" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span> abre o episódio para ouvir.</p>
+    </section>
+    <section data-panel="ideias" hidden>
+      <div class="tour-art" aria-hidden="true"><span class="vote-chip on big">▲ 5</span></div>
+      <h3>Ideias e votos</h3>
+      <p>Teve uma ideia? Toque em <strong>+ Nova ideia</strong>. Ela entra na coluna Ideia.</p>
+      <p>Na coluna Ideia, toque no <strong>▲</strong> de um card para votar (toque de novo para tirar o voto). As mais votadas ficam no topo.</p>
+    </section>
+    <section data-panel="episodio" hidden>
+      <div class="tour-art" aria-hidden="true"><span class="chip seg seg-c1">Quadro</span> <span class="people">{{ avatar(me) }}<span class="avatar">BC</span><span class="avatar">PS</span></span></div>
+      <h3>Dentro de um episódio</h3>
+      <p>Toque no título de um card para abrir. Abas: <strong>Resumo</strong>, <strong>Roteiro</strong> (o texto do episódio, que todo mundo edita junto e salva sozinho), <strong>Jogos</strong>, <strong>Conversa</strong> e <strong>Histórico</strong>.</p>
+      <p>Em <strong>✎ Editar</strong> você marca os quadros, quem participou, o número, o link e a data em que foi ao ar.</p>
+    </section>
+    <section data-panel="agenda" hidden>
+      <div class="tour-art" aria-hidden="true">
+        <div class="mini-grid">{% for i in range(12) %}<span class="{{ 'on' if i in (1,2,5,6,9) }}"></span>{% endfor %}</div>
+      </div>
+      <h3>Agenda</h3>
+      <p>Para marcar uma gravação, crie uma <strong>rodada de horários</strong>. Cada pessoa pinta na grade quando pode gravar.</p>
+      <p>O app mostra os <strong>melhores horários</strong> e quem fica de fora. Toque em <strong>Marcar</strong> e mande o convite no WhatsApp.</p>
+    </section>
+    <section data-panel="jogos" hidden>
+      <div class="tour-art" aria-hidden="true"><span class="pill ok">em 2 episódios</span></div>
+      <h3>Jogos</h3>
+      <p>Busque jogos na Ludopedia pelo <strong>nome</strong> ou por uma <strong>mecânica</strong> (ex.: Dedução, Alocação de Trabalhadores).</p>
+      <p>Se o jogo já entrou em algum episódio, aparece em quais.</p>
+    </section>
+    <section data-panel="numeros" hidden>
+      <div class="tour-art" aria-hidden="true"><span class="mini-bars"><span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:100%"></span></span></div>
+      <h3>Números</h3>
+      <p>Os números do podcast: <strong>lançamentos por mês</strong>, episódios por <strong>quadro</strong>, quem mais gravou, os jogos mais falados e o funil de episódios.</p>
+      <p>Filtre por ano no topo. Os números vêm dos episódios publicados com data, então vale preencher a data em ✎ Editar.</p>
+    </section>
+    <section data-panel="grupo" hidden>
+      <div class="tour-art" aria-hidden="true">👥</div>
+      <h3>Grupo</h3>
+      <p>Em <strong>Grupo</strong> ficam os membros, a <strong>sua conta</strong> (nome, email, senha, foto) e o <strong>logo</strong> do podcast.</p>
+    </section>
+  </div>
+
+  <footer class="guide-foot">
+    <label class="check"><input type="checkbox" data-hide {{ 'checked' if me.tutorial_seen_at }}> Não mostrar ao entrar</label>
+    <div class="actions tight">
+      <button type="button" class="btn small" data-prev>Voltar</button>
+      <button type="button" class="btn small primary" data-next>Próximo</button>
+    </div>
+  </footer>
+</dialog>
+<script src="/static/guide.js?v=1" defer></script>

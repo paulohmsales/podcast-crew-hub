@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Números · Então Ganhei{% endblock %}
+{% block page_class %}mid{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Números</h1>
+  {% if years %}
+  <nav class="mode-switch" aria-label="Período">
+    <a href="/numeros" aria-selected="{{ 'true' if not ano else 'false' }}">Tudo</a>
+    {% for y in years %}<a href="/numeros?ano={{ y }}" aria-selected="{{ 'true' if ano == y else 'false' }}">{{ y }}</a>{% endfor %}
+  </nav>
+  {% endif %}
+</div>
+
+<div class="kpis">
+  <div class="kpi"><span class="kpi-label">Episódios no ar{% if ano %} em {{ ano }}{% endif %}</span><strong>{{ kpis.published }}</strong></div>
+  <div class="kpi"><span class="kpi-label">Último lançamento</span>
+    {% if kpis.last %}<strong>{{ fmt_short(kpis.last) }}</strong><span class="muted small">há {{ kpis.since_last }} dia{{ 's' if kpis.since_last != 1 }}</span>{% else %}<strong>—</strong>{% endif %}</div>
+  <div class="kpi"><span class="kpi-label">Intervalo típico entre episódios</span>
+    {% if kpis.gap is not none %}<strong>{{ kpis.gap }} dia{{ 's' if kpis.gap != 1 }}</strong><span class="muted small">mediana</span>{% else %}<strong>—</strong>{% endif %}</div>
+  <div class="kpi"><span class="kpi-label">Em produção</span><strong>{{ kpis.in_progress }}</strong><span class="muted small">na pauta, agendados e gravados</span></div>
+</div>
+
+<section class="card">
+  <h2>Lançamentos por mês</h2>
+  {% if monthly %}
+  <div class="cols-chart" role="img" aria-label="Episódios publicados por mês">
+    <div class="cols-plot">
+      {% for r in monthly %}
+      <div class="col-slot {{ 'year-start' if r.first_of_year and not loop.first }}" tabindex="0" data-tip="{{ r.label }}: {{ r.count }} episódio{{ 's' if r.count != 1 }}">
+        <div class="col-bar" style="height: {{ (r.count / month_max * 100) if month_max else 0 }}%"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="cols-axis" aria-hidden="true">
+      {% for r in monthly %}<span>{% if ano or monthly|length <= 14 or (loop.index0 % 3 == 0) %}{{ r.short if ano else r.label }}{% endif %}</span>{% endfor %}
+    </div>
+  </div>
+  <p class="muted small chart-note">Maior mês: {{ month_max }} episódio{{ 's' if month_max != 1 }}. Passe o mouse (ou toque) numa barra para ver o mês.</p>
+  <details class="data-table">
+    <summary class="link-btn">ver tabela</summary>
+    <table><thead><tr><th>Mês</th><th>Episódios</th></tr></thead>
+      <tbody>{% for r in monthly %}<tr><td>{{ r.label }}</td><td>{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+  </details>
+  {% else %}
+  <p class="muted">Nenhum episódio publicado com data ainda. Marque a data em que foi ao ar em ✎ Editar.</p>
+  {% endif %}
+</section>
+
+<div class="stats-grid">
+  <section class="card">
+    <h2>Episódios por quadro</h2>
+    {% if by_segment %}
+    {% set top = by_segment[0][1] %}
+    <ul class="hbars">
+      {% for s, n in by_segment %}
+      <li><span class="hb-label"><span class="chip seg {{ seg_color(s) }}">{{ s.name }}</span></span>
+        <span class="hb-track"><span class="hb-bar {{ seg_color(s) }} tinted" style="width: {{ n / top * 100 }}%"></span></span>
+        <span class="hb-value">{{ n }}</span></li>
+      {% endfor %}
+    </ul>
+    {% if no_segment %}<p class="muted small chart-note">{{ no_segment }} episódio{{ 's' if no_segment != 1 }} sem quadro marcado.</p>{% endif %}
+    {% else %}<p class="muted">Nenhum episódio publicado com quadro marcado.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Quem mais gravou</h2>
+    {% if by_member %}
+    {% set top = by_member[0][1] %}
+    <ul class="hbars">
+      {% for m, n in by_member %}
+      <li><span class="hb-label">{{ avatar(m) }} {{ m.name }}</span>
+        <span class="hb-track"><span class="hb-bar" style="width: {{ n / top * 100 }}%"></span></span>
+        <span class="hb-value">{{ n }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Ninguém marcado como participante ainda.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Jogos mais falados</h2>
+    {% if by_game %}
+    {% set top = by_game[0][1] %}
+    <ul class="hbars">
+      {% for g, n in by_game %}
+      <li><a class="hb-label" href="/jogos/{{ g.id }}">{% if g.thumb %}<img src="{{ g.thumb }}" alt="" width="22" height="22">{% endif %} {{ g.name }}</a>
+        <span class="hb-track"><span class="hb-bar" style="width: {{ n / top * 100 }}%"></span></span>
+        <span class="hb-value">{{ n }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Nenhum jogo marcado nos episódios publicados.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Funil de episódios</h2>
+    {% set top = pipeline | map(attribute=1) | max %}
+    <ul class="hbars">
+      {% for label, n, status in pipeline %}
+      <li><a class="hb-label" href="/episodios?ver=lista&status={{ status }}">{{ label }}</a>
+        <span class="hb-track"><span class="hb-bar {{ 'zero' if not n }}" style="width: {{ (n / top * 100) if top else 0 }}%"></span></span>
+        <span class="hb-value">{{ n }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="muted small chart-note">Todos os episódios, de qualquer ano.</p>
+  </section>
+</div>
+{% endblock %}

@@ -57,7 +57,7 @@ def test_rejects_non_images_and_bad_paths(client, paulo, db):
     assert client.get("/fotos/1-abc.webp").status_code == 404
 
 
-def test_first_access_asks_for_photo_then_tour(db):
+def test_first_access_asks_for_photo_then_guide(db):
     novo = Member(name="Bia Costa", email="bia@ex.com", password_hash="x")
     db.add(novo)
     db.commit()
@@ -71,7 +71,8 @@ def test_first_access_asks_for_photo_then_tour(db):
     assert res.headers["location"] == "/bem-vindo"
     db.refresh(novo)
     assert novo.photo
-    assert c.get("/", follow_redirects=False).headers["location"] == "/bem-vindo"
+    page = c.get("/", follow_redirects=False)
+    assert page.status_code == 200 and "data-auto" in page.text  # with a photo: home, guide opens
 
 
 def test_home_nudges_members_without_photo(client):

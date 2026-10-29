@@ -60,7 +60,7 @@
     <h2>Detalhes</h2>
     <dl class="facts">
       <dt>Quadros</dt>
-      <dd>{% for s in theme.segments %}<span class="chip seg">{{ s.name }}</span>{% else %}<span class="muted">—</span>{% endfor %}</dd>
+      <dd>{% for s in theme.segments %}<span class="chip seg {{ seg_color(s) }}">{{ s.name }}</span>{% else %}<span class="muted">—</span>{% endfor %}</dd>
       <dt>Participantes</dt>
       <dd>{% if theme.participants %}<span class="people">{% for m in theme.participants %}{{ avatar(m) }}{% endfor %}<span class="names">{{ theme.participants | map(attribute='name') | join(', ') }}</span></span>{% else %}<span class="muted">—</span>{% endif %}</dd>
       <dt>Gravação</dt>

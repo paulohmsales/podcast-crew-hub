@@ -52,8 +52,13 @@
     const r = board.getBoundingClientRect();
     if (x < r.left + EDGE_PX) board.scrollLeft -= 12;
     else if (x > r.right - EDGE_PX) board.scrollLeft += 12;
-    if (y < EDGE_PX + 56) window.scrollBy(0, -12);
-    else if (y > window.innerHeight - EDGE_PX) window.scrollBy(0, 12);
+    // Each column scrolls on its own: scroll the one under the pointer.
+    const list = drag.over && drag.over.querySelector("[data-drop]");
+    if (list) {
+      const l = list.getBoundingClientRect();
+      if (y < l.top + EDGE_PX) list.scrollTop -= 12;
+      else if (y > l.bottom - EDGE_PX) list.scrollTop += 12;
+    }
     place();
     requestAnimationFrame(autoScroll);
   };
@@ -103,7 +108,9 @@
     setTimeout(() => (suppressClick = false), 50);
     if (!over || over === from) return;
 
-    over.querySelector("[data-drop]").prepend(card);
+    const list = over.querySelector("[data-drop]");
+    list.prepend(card);
+    list.scrollTop = 0;
     card.classList.add("saving");
     try {
       const res = await fetch(`/episodios/${card.dataset.id}/status`, {

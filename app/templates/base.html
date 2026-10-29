@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Então Ganhei{% endblock %}</title>
   <link rel="icon" href="{{ logo_url() }}">
-  <link rel="stylesheet" href="/static/style.css?v=12">
+  <link rel="stylesheet" href="/static/style.css?v=14">
 </head>
 <body>
   {% if me %}
@@ -15,6 +15,7 @@
       {% set path = request.url.path %}
       <a href="/episodios" class="{{ 'active' if path.startswith('/episodios') or path.startswith('/quadros') }}">Episódios</a>
       <a href="/jogos" class="{{ 'active' if path.startswith('/jogos') }}">Jogos</a>
+      <a href="/numeros" class="{{ 'active' if path.startswith('/numeros') }}">Números</a>
       <a href="/agenda" class="{{ 'active' if path.startswith('/agenda') }}">Agenda</a>
       <a href="/membros" class="{{ 'active' if path.startswith('/membros') }}">Grupo</a>
     </nav>
@@ -23,6 +24,7 @@
   <main class="page {% block page_class %}{% endblock %}">
     {% block content %}{% endblock %}
   </main>
+  {% if me %}{% include "_guide.html" %}{% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

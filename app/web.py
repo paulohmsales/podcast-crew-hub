@@ -22,6 +22,7 @@ templates.env.globals.update(
     STATUSES=THEME_STATUSES,
     fmt_day=schedule.fmt_day,
     fmt_slot=schedule.fmt_slot,
+    fmt_short=schedule.fmt_short,
     fmt_minutes=schedule.fmt_minutes,
     BASE_URL=BASE_URL,
 )
@@ -42,7 +43,15 @@ def avatar(member: Member | None, size: str = "") -> Markup:
     return Markup(f'<span class="{cls}" aria-hidden="true" title="{escape(member.name)}">{escape(photos.initials(member.name))}</span>')
 
 
-templates.env.globals.update(whatsapp_url=whatsapp_url, logo_url=branding.logo_url, avatar=avatar)
+SEGMENT_COLORS = 8  # .seg-c1 … .seg-c8 in style.css
+
+
+def seg_color(segment) -> str:
+    """A quadro's color class. Keyed on the id, so reordering quadros doesn't repaint them."""
+    return f"seg-c{(segment.id - 1) % SEGMENT_COLORS + 1}"
+
+
+templates.env.globals.update(whatsapp_url=whatsapp_url, logo_url=branding.logo_url, avatar=avatar, seg_color=seg_color)
 
 
 class LoginRequired(Exception):

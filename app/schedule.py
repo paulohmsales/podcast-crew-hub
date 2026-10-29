@@ -44,6 +44,15 @@ def fmt_day(d: date) -> str:
     return f"{WEEKDAYS[d.weekday()]} {d.day:02d}/{d.month:02d}"
 
 
+MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+
+
+def fmt_short(d: date) -> str:
+    """'11 abr', with the year only when it isn't this year: '11 abr 2025'."""
+    text = f"{d.day} {MONTHS[d.month - 1]}"
+    return text if d.year == date.today().year else f"{text} {d.year}"
+
+
 def fmt_slot(dt: datetime) -> str:
     return f"{fmt_day(dt.date())} às {dt:%H:%M}"
 

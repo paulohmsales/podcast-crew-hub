@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Episódios · Então Ganhei{% endblock %}
-{% block page_class %}wide{% endblock %}
+{% block page_class %}wide board-page{% endblock %}
 {% block content %}
 {% include "_episodes_head.html" %}
 
@@ -19,7 +19,7 @@
           {% if t.number %}<span class="ep-num">#{{ t.number }}</span>{% endif %}{{ t.title }}
         </a>
         {% if t.segments %}
-        <div class="chips">{% for s in t.segments %}<span class="chip seg">{{ s.name }}</span>{% endfor %}</div>
+        <div class="chips">{% for s in t.segments %}<span class="chip seg {{ seg_color(s) }}">{{ s.name }}</span>{% endfor %}</div>
         {% endif %}
         {% if t.games %}
         <div class="game-thumbs" title="{{ t.games | map(attribute='name') | join(', ') }}">
@@ -31,7 +31,6 @@
         <div class="people" title="{{ t.participants | map(attribute='name') | join(', ') }}">
           {% for m in t.participants[:6] %}{{ avatar(m) }}{% endfor %}
           <span class="sr-only">Com {{ t.participants | map(attribute='name') | join(', ') }}</span>
-          <span class="muted small names">{{ t.participants | map(attribute='name') | join(', ') }}</span>
         </div>
         {% endif %}
         <div class="ep-foot">
@@ -45,9 +44,9 @@
           {% elif col == 'gravado' and recorded.get(t.id) %}
           <span class="muted small">gravado em {{ fmt_day(recorded[t.id].date()) }}</span>
           {% elif col == 'publicado' and t.published_on %}
-          <span class="muted small">no ar em {{ t.published_on.strftime('%d/%m/%Y') }}</span>
+          <span class="muted small aired" title="No ar em {{ t.published_on.strftime('%d/%m/%Y') }}">{{ fmt_short(t.published_on) }}</span>
           {% endif %}
-          {% if t.episode_url %}<a class="listen" href="{{ t.episode_url }}" target="_blank" rel="noopener">▶ Ouvir</a>{% endif %}
+          {% if t.episode_url %}<a class="listen" href="{{ t.episode_url }}" target="_blank" rel="noopener" title="Ouvir" aria-label="Ouvir {{ t.title }}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></a>{% endif %}
         </div>
       </li>
       {% endfor %}
@@ -63,4 +62,4 @@
 
 {% endblock %}
 
-{% block scripts %}<script src="/static/board.js?v=3" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/board.js?v=4" defer></script>{% endblock %}
